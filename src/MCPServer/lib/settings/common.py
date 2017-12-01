@@ -35,7 +35,7 @@ CONFIG_MAPPING = {
     'wait_on_auto_approve': {'section': 'MCPServer', 'option': 'waitOnAutoApprove', 'type': 'int'},
     'watch_directory_interval': {'section': 'MCPServer', 'option': 'watchDirectoriesPollInterval', 'type': 'int'},
     'secret_key': {'section': 'MCPServer', 'option': 'django_secret_key', 'type': 'string'},
-    'disable_search_indexing': {'section': 'MCPServer', 'option': 'disable_search_indexing', 'type': 'boolean'},
+    'search_enabled': {'section': 'MCPServer', 'option': 'search_enabled', 'type': 'boolean'},
 
     # [Protocol]
     'limit_task_threads': {'section': 'Protocol', 'option': 'limitTaskThreads', 'type': 'int'},
@@ -62,7 +62,7 @@ rejectedDirectory = %%sharedPath%%rejected/
 watchDirectoriesPollInterval = 1
 processingXMLFile = processingMCP.xml
 waitOnAutoApprove = 0
-disable_search_indexing = True
+search_enabled = False
 
 [Protocol]
 delimiter = <!&\delimiter/&!>
@@ -165,4 +165,4 @@ LIMIT_TASK_THREADS = config.get('limit_task_threads')
 LIMIT_TASK_THREADS_SLEEP = config.get('limit_task_threads_sleep')
 LIMIT_GEARMAN_CONNS = config.get('limit_gearman_conns')
 RESERVED_AS_TASK_PROCESSING_THREADS = config.get('reserved_as_task_processing_threads')
-DISABLE_SEARCH_INDEXING = config.get('disable_search_indexing')
+SEARCH_ENABLED = config.get('search_enabled')

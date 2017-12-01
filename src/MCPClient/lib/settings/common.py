@@ -38,7 +38,7 @@ CONFIG_MAPPING = {
     'client_modules_file': {'section': 'MCPClient', 'option': 'archivematicaClientModules', 'type': 'string'},
     'elasticsearch_server': {'section': 'MCPClient', 'option': 'elasticsearchServer', 'type': 'string'},
     'elasticsearch_timeout': {'section': 'MCPClient', 'option': 'elasticsearchTimeout', 'type': 'float'},
-    'disable_search_indexing': {'section': 'MCPClient', 'option': 'disableElasticsearchIndexing', 'type': 'boolean'},
+    'search_enabled': {'section': 'MCPClient', 'option': 'search_enabled', 'type': 'boolean'},
     'removable_files': {'section': 'MCPClient', 'option': 'removableFiles', 'type': 'string'},
     'temp_directory': {'section': 'MCPClient', 'option': 'temp_dir', 'type': 'string'},
     'secret_key': {'section': 'MCPClient', 'option': 'django_secret_key', 'type': 'string'},
@@ -71,7 +71,7 @@ LoadSupportedCommandsSpecial = True
 numberOfTasks = 0
 elasticsearchServer = localhost:9200
 elasticsearchTimeout = 10
-disableElasticsearchIndexing = True
+search_enabled = False
 temp_dir = /var/archivematica/sharedDirectory/tmp
 removableFiles = Thumbs.db, Icon, Icon\r, .DS_Store
 clamav_server = /var/run/clamav/clamd.ctl
@@ -184,7 +184,7 @@ LOAD_SUPPORTED_COMMANDS_SPECIAL = config.get('load_supported_commands_special')
 GEARMAN_SERVER = config.get('gearman_server')
 NUMBER_OF_TASKS = config.get('number_of_tasks')
 CLIENT_MODULES_FILE = config.get('client_modules_file')
-DISABLE_SEARCH_INDEXING = config.get('disable_search_indexing')
+SEARCH_ENABLED = config.get('search_enabled')
 REMOVABLE_FILES = config.get('removable_files')
 TEMP_DIRECTORY = config.get('temp_directory')
 ELASTICSEARCH_SERVER = config.get('elasticsearch_server')
