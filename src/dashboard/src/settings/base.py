@@ -34,6 +34,7 @@ CONFIG_MAPPING = {
     'watch_directory': {'section': 'Dashboard', 'option': 'watch_directory', 'type': 'string'},
     'elasticsearch_server': {'section': 'Dashboard', 'option': 'elasticsearch_server', 'type': 'string'},
     'elasticsearch_timeout': {'section': 'Dashboard', 'option': 'elasticsearch_timeout', 'type': 'float'},
+    'disable_search_indexing': {'section': 'Dashboard', 'option': 'disable_search_indexing', 'type': 'boolean'},
     'search_enabled': {'section': 'Dashboard', 'option': 'search_enabled', 'type': 'boolean'},
     'gearman_server': {'section': 'Dashboard', 'option': 'gearman_server', 'type': 'string'},
     'shibboleth_authentication': {'section': 'Dashboard', 'option': 'shibboleth_authentication', 'type': 'boolean'},
@@ -61,7 +62,7 @@ shared_directory = /var/archivematica/sharedDirectory/
 watch_directory = /var/archivematica/sharedDirectory/watchedDirectories/
 elasticsearch_server = 127.0.0.1:9200
 elasticsearch_timeout = 10
-search_enabled = False
+search_enabled = {search_enabled_default}
 gearman_server = 127.0.0.1:4730
 shibboleth_authentication = False
 ldap_authentication = False
@@ -77,7 +78,7 @@ database = MCP
 port = 3306
 engine = django.db.backends.mysql
 conn_max_age = 0
-"""
+""".format(search_enabled_default=SEARCH_ENABLED_DEFAULT)
 
 config = Config(env_prefix='ARCHIVEMATICA_DASHBOARD', attrs=CONFIG_MAPPING)
 config.read_defaults(StringIO.StringIO(CONFIG_DEFAULTS))
@@ -370,6 +371,24 @@ else:
     logging.config.dictConfig(LOGGING)
 
 
+def get_search_enabled():
+    """Reconcile two equivalent configuration switches:
+    ``disable_search_indexing`` and ``search_enabled``. Required for backward
+    compatibility.
+    """
+    disable_search_indexing = config.get('disable_search_indexing')
+    search_enabled = config.get('search_enabled')
+    if disable_search_indexing is True:
+        return False
+    if disable_search_indexing is False:
+        return True
+    if search_enabled is True:
+        return True
+    if search_enabled is False:
+        return False
+    return SEARCH_ENABLED_DEFAULT
+
+
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
@@ -430,7 +449,7 @@ SHARED_DIRECTORY = config.get('shared_directory')
 WATCH_DIRECTORY = config.get('watch_directory')
 ELASTICSEARCH_SERVER = config.get('elasticsearch_server')
 ELASTICSEARCH_TIMEOUT = config.get('elasticsearch_timeout')
-SEARCH_ENABLED = config.get('search_enabled')
+SEARCH_ENABLED = get_search_enabled()
 STORAGE_SERVICE_CLIENT_TIMEOUT = config.get('storage_service_client_timeout')
 AGENTARCHIVES_CLIENT_TIMEOUT = config.get('agentarchives_client_timeout')
 
