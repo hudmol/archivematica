@@ -6,7 +6,7 @@ import sys
 from uuid import uuid4
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from django.utils import timezone
 from main.models import Derivation, File, FileFormatVersion

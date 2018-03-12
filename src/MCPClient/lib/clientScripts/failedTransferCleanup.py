@@ -6,7 +6,7 @@ import os
 import sys
 
 import django
-django.setup()
+#django.setup()
 
 # archivematicaCommon
 import storageService as storage_service

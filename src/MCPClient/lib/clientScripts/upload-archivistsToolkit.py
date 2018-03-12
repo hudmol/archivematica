@@ -35,7 +35,7 @@ from agentarchives.atk import ArchivistsToolkitClient
 # global variables
 testMode = 0
 
-# moved after django.setup()
+# moved after #django.setup()
 logger = get_script_logger("archivematica.mcp.client")
 
 
@@ -81,10 +81,10 @@ def get_files_from_dip(dip_location, dip_name, dip_uuid):
         else:
             logger.error("no files in " + mydir)
             raise ValueError("cannot find dip")
-            exit(2)
+            sys.exit(2)
     except Exception:
         raise
-        exit(3)
+        sys.exit(3)
 
 
 def get_pairs(dip_uuid):
@@ -112,7 +112,7 @@ def upload_to_atk(mylist, atuser, ead_actuate, ead_show, object_type, use_statem
             logger.debug("found mets file")
         except Exception:
             raise
-            exit(4)
+            sys.exit(4)
 
     client = ArchivistsToolkitClient(args.atdbhost, args.atdbuser, args.atdbpass, args.atdb)
 

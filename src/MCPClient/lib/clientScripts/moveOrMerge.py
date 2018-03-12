@@ -20,13 +20,14 @@ def main(src, dst):
     else:
         shutil.move(src, dst)
 
-    return 0
-
 
 if __name__ == '__main__':
     src = sys.argv[1]
     dst = sys.argv[2]
     try:
-        sys.exit(main(src, dst))
+        main(src, dst)
     except Exception as e:
         sys.exit(e)
+
+    sys.exit(0)
+

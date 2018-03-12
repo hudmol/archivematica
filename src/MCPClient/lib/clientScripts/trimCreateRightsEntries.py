@@ -32,7 +32,7 @@ from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import RightsStatement, RightsStatementOtherRightsInformation, RightsStatementOtherRightsDocumentationIdentifier, RightsStatementRightsGranted, RightsStatementRightsGrantedNote, RightsStatementRightsGrantedRestriction
 
@@ -175,4 +175,4 @@ for dir in os.listdir(transferPath):
             restriction="Disallow"
         )
 
-quit(exitCode)
+sys.exit(exitCode)

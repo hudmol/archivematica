@@ -17,7 +17,7 @@ import sys
 import uuid
 
 import django
-django.setup()
+#django.setup()
 from django.db.models import Q
 # dashboard
 from main.models import Event, File
@@ -64,18 +64,18 @@ except (File.DoesNotExist, File.MultipleObjectsReturned) as e:
             preservation_file = filePath[filePath.index('manualNormalization/preservation/'):]
         except ValueError:
             print("{0} not in manualNormalization directory".format(filePath), file=sys.stderr)
-            exit(4)
+            sys.exit(4)
         original = fileOperations.findFileInNormalizatonCSV(csv_path,
                                                             "preservation", preservation_file, SIPUUID)
         if original is None:
             if isinstance(e, File.DoesNotExist):
                 print("No matching file for: {0}".format(
                     filePath.replace(SIPDirectory, "%SIPDirectory%")), file=sys.stderr)
-                exit(3)
+                sys.exit(3)
             else:
                 print("Could not find {preservation_file} in {filename}".format(
                     preservation_file=preservation_file, filename=csv_path), file=sys.stderr)
-                exit(2)
+                sys.exit(2)
         # If we found the original file, retrieve it from the DB
         original_file = File.objects.get(removedtime__isnull=True,
                                          filegrpuse="original",
@@ -84,10 +84,10 @@ except (File.DoesNotExist, File.MultipleObjectsReturned) as e:
     else:
         if isinstance(e, File.DoesNotExist):
             print("No matching file for: ", filePath.replace(SIPDirectory, "%SIPDirectory%", 1), file=sys.stderr)
-            exit(3)
+            sys.exit(3)
         elif isinstance(e, File.MultipleObjectsReturned):
             print("Too many possible files for: ", filePath.replace(SIPDirectory, "%SIPDirectory%", 1), file=sys.stderr)
-            exit(2)
+            sys.exit(2)
 
 # We found the original file somewhere above
 print("Matched original file %s (%s) to  preservation file %s (%s)" % (original_file.currentlocation, original_file.uuid, filePath, fileUUID))
@@ -101,7 +101,7 @@ dstR = dst.replace(SIPDirectory, "%SIPDirectory%", 1)
 
 if os.path.exists(dst):
     print("already exists:", dstR, file=sys.stderr)
-    exit(2)
+    sys.exit(2)
 
 # Rename the preservation file
 print('Renaming preservation file', filePath, 'to', dst)
@@ -137,4 +137,4 @@ except Event.DoesNotExist:
         derivedFileUUID=fileUUID,
         relatedEventUUID=derivationEventUUID)
 
-exit(0)
+sys.exit(0)

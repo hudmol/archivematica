@@ -29,7 +29,7 @@ import sys
 import shutil
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import File, SIP
 

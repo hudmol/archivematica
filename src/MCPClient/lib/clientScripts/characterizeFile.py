@@ -12,7 +12,7 @@ import sys
 from lxml import etree
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import FPCommandOutput
 from fpr.models import FPRule, FormatVersion

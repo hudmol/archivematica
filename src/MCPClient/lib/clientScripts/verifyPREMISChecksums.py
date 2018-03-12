@@ -27,7 +27,7 @@ from optparse import OptionParser
 import uuid
 
 import django
-django.setup()
+#django.setup()
 
 # dashboard
 from main.models import File
@@ -43,7 +43,7 @@ def verifyChecksum(fileUUID, filePath, date, eventIdentifierUUID):
 
     if f.checksum in ('', 'None'):
         print('No checksum found in database for file:', fileUUID, filePath, file=sys.stderr)
-        exit(1)
+        sys.exit(1)
 
     checksumFile = get_file_checksum(filePath, f.checksumtype)
 
@@ -72,7 +72,7 @@ def verifyChecksum(fileUUID, filePath, date, eventIdentifierUUID):
         eventDetail='program="python"; module="hashlib.{}()"'.format(f.checksumtype)
     )
 
-    exit(exitCode)
+    sys.exit(exitCode)
 
 
 if __name__ == '__main__':

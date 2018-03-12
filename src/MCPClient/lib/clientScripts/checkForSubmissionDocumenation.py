@@ -36,4 +36,4 @@ if os.listdir(target) == []:
     f.close()
     os.chmod(fileName, 488)
 else:
-    exit(0)
+    sys.exit(0)

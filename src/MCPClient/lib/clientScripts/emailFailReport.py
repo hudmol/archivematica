@@ -34,7 +34,7 @@ from custom_handlers import get_script_logger
 from externals.HTML import HTML
 
 
-django.setup()
+#django.setup()
 
 logger = get_script_logger('archivematica.mcp.client.emailFailReport')
 

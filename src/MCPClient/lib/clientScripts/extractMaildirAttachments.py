@@ -30,7 +30,7 @@ import traceback
 import uuid
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import File
 
@@ -174,7 +174,7 @@ if __name__ == '__main__':
             print("INVALID MAILDIR FORMAT", file=sys.stderr)
             print(type(inst), file=sys.stderr)
             print(inst.args, file=sys.stderr)
-            exit(-10)
+            sys.exit(-10)
         mirrorDir = os.path.join(transferDir, "objects/attachments", maildirsub)
         try:
             os.makedirs(mirrorDir)
@@ -185,4 +185,4 @@ if __name__ == '__main__':
         addKeyFileToNormalizeMaildirOffOf(os.path.join(maildir, maildirsub).replace(transferDir, "%transferDirectory%", 1), mirrorDir, transferDir, transferUUID, date, eventDetail=eventDetail, fileUUID=fileUUID)
     tree = etree.ElementTree(root)
     tree.write(outXML, pretty_print=True, xml_declaration=True)
-    exit(sharedVariablesAcrossModules.errorCounter)
+    sys.exit(sharedVariablesAcrossModules.errorCounter)

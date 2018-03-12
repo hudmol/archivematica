@@ -25,7 +25,7 @@ import os
 import sys
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import File
 
@@ -76,4 +76,4 @@ if os.path.isdir(manual_normalization_dir):
             manual_normalization_dir, e.args), file=sys.stderr)
         errorCount += 1
 
-exit(errorCount)
+sys.exit(errorCount)

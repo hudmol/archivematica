@@ -18,7 +18,7 @@ import components.helpers as helpers
 from custom_handlers import get_script_logger
 
 
-django.setup()
+#django.setup()
 
 logger = get_script_logger('archivematica.mcp.client.normalizeReport')
 

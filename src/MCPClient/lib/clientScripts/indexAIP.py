@@ -16,7 +16,7 @@ import storageService as storage_service
 import identifier_functions
 
 import django
-django.setup()
+#django.setup()
 
 from django.conf import settings as mcpclient_settings
 

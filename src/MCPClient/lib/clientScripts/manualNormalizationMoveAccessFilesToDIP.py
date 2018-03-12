@@ -25,7 +25,7 @@ import os
 import sys
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import File
 
@@ -75,18 +75,18 @@ except (File.DoesNotExist, File.MultipleObjectsReturned) as e:
             access_file = opts.filePath[opts.filePath.index('manualNormalization/access/'):]
         except ValueError:
             print("{0} not in manualNormalization directory".format(opts.filePath), file=sys.stderr)
-            exit(4)
+            sys.exit(4)
         original = fileOperations.findFileInNormalizatonCSV(csv_path,
                                                             "access", access_file, unitIdentifier)
         if original is None:
             if isinstance(e, File.DoesNotExist):
                 print("No matching file for: {0}".format(
                     opts.filePath.replace(opts.sipDirectory, "%SIPDirectory%")), file=sys.stderr)
-                exit(3)
+                sys.exit(3)
             else:
                 print("Could not find {access_file} in {filename}".format(
                     access_file=access_file, filename=csv_path), file=sys.stderr)
-                exit(2)
+                sys.exit(2)
         # If we found the original file, retrieve it from the DB
         kwargs = {
             "removedtime__isnull": True,
@@ -98,10 +98,10 @@ except (File.DoesNotExist, File.MultipleObjectsReturned) as e:
     else:
         if isinstance(e, File.DoesNotExist):
             print("No matching file for: ", opts.filePath.replace(opts.SIPDirectory, "%SIPDirectory%", 1), file=sys.stderr)
-            exit(3)
+            sys.exit(3)
         elif isinstance(e, File.MultipleObjectsReturned):
             print("Too many possible files for: ", opts.filePath.replace(opts.SIPDirectory, "%SIPDirectory%", 1), file=sys.stderr)
-            exit(2)
+            sys.exit(2)
 
 # We found the original file somewhere above, get the UUID and path
 originalFileUUID = f.uuid
@@ -127,4 +127,4 @@ except:
 # see http://docs.python.org/2/library/os.html
 os.rename(opts.filePath, os.path.join(dstDir, dstFile))
 
-exit(0)
+sys.exit(0)

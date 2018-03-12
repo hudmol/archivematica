@@ -4,7 +4,7 @@ from __future__ import print_function
 import sys
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from fpr.models import FPRule
 from main.models import FileFormatVersion, Transfer, File, Event

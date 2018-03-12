@@ -6,7 +6,7 @@ import os.path
 import sys
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import SIP
 

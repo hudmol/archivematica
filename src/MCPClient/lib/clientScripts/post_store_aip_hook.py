@@ -7,7 +7,7 @@ import sys
 import requests
 
 import django
-django.setup()
+#django.setup()
 from django.conf import settings as mcpclient_settings
 # dashboard
 from main import models

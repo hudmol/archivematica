@@ -18,7 +18,7 @@ import sys
 from custom_handlers import get_script_logger
 
 import django
-django.setup()
+#django.setup()
 from django.conf import settings as mcpclient_settings
 from fpr.models import FPRule, FormatVersion
 from main.models import Derivation, File, SIP, Transfer

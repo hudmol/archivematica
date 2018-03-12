@@ -18,7 +18,7 @@ import os
 import sys
 
 import django
-django.setup()
+#django.setup()
 from fpr.models import FPRule, FormatVersion
 from main.models import Derivation, File, SIP
 

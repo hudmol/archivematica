@@ -45,6 +45,6 @@ def isMaildir(path):
 if __name__ == '__main__':
     path = sys.argv[1]
     if isMaildir(path):
-        exit(exitCodes['maildir'])
+        sys.exit(exitCodes['maildir'])
 
-    exit(exitCodes[None])
+    sys.exit(exitCodes[None])

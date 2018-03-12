@@ -33,7 +33,7 @@ date = sys.argv[4]
 
 # fileOperations, databaseFunctions requires Django to be set up
 import django
-django.setup()
+#django.setup()
 # archivematicaCommon
 from custom_handlers import get_script_logger
 from fileOperations import getFileUUIDLike
@@ -128,7 +128,7 @@ for line in open(os.path.join(transferPath, "manifest.txt"), 'r'):
                 print("File does not exists: ", path.replace(transferPath, "%TransferDirectory%"), file=sys.stderr)
                 exitCode += 1
 if fileCount:
-    quit(exitCode)
+    sys.exit(exitCode)
 else:
     print("No files found.", file=sys.stderr)
-    quit(-1)
+    sys.exit(-1)

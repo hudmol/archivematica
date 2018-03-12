@@ -41,4 +41,4 @@ if os.path.isdir(manualNormalizationPath):
     if os.path.isdir(mn_preserve_path) and os.listdir(mn_preserve_path):
         print('Manually normalized files found')
         sys.exit(179)
-exit(0)
+sys.exit(0)

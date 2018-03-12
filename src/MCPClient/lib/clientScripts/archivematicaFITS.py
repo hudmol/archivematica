@@ -33,7 +33,7 @@ from databaseFunctions import insertIntoFPCommandOutput
 from executeOrRunSubProcess import executeOrRun
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import FPCommandOutput
 

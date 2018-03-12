@@ -14,7 +14,7 @@ import shutil
 
 # databaseFunctions requires Django to be set up
 import django
-django.setup()
+#django.setup()
 # archivematicaCommon
 from custom_handlers import get_script_logger
 from databaseFunctions import fileWasRemoved

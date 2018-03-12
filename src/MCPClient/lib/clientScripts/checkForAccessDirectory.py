@@ -27,7 +27,7 @@ import sys
 from optparse import OptionParser
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import File
 
@@ -108,7 +108,7 @@ if __name__ == '__main__':
 
     if not os.path.isdir(accessDirectory):
         print("no access directory in this sip")
-        exit(0)
+        sys.exit(0)
 
     try:
         if not os.path.isdir(DIPDirectory):
@@ -119,4 +119,4 @@ if __name__ == '__main__':
         print("error creating DIP directory")
 
     exitCode = something(SIPDirectory, accessDirectory, objectsDirectory, DIPDirectory, SIPUUID, date, copy)
-    exit(exitCode)
+    sys.exit(exitCode)

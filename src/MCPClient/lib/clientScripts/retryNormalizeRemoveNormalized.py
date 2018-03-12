@@ -29,7 +29,7 @@ import traceback
 from optparse import OptionParser
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from django.utils import timezone
 from main.models import Derivation, Event, File

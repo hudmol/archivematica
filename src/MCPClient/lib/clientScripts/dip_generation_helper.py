@@ -17,7 +17,7 @@ from agentarchives import archivesspace
 
 # initialize Django (required for Django 1.7)
 import django
-django.setup()
+#django.setup()
 
 
 logger = get_script_logger("archivematica.mcp.client.moveTransfer")

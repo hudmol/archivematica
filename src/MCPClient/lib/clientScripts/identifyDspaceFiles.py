@@ -28,7 +28,7 @@ from lxml import etree
 import namespaces
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import File
 

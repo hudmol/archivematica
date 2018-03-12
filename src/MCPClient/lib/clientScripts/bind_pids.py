@@ -50,7 +50,7 @@ import os
 import sys
 
 import django
-django.setup()
+#django.setup()
 from lxml import etree
 # dashboard
 from main.models import DashboardSetting, Directory, Identifier, SIP

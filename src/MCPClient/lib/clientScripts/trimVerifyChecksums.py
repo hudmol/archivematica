@@ -28,7 +28,7 @@ import uuid
 
 # fileOperations, databaseFunctions requires Django to be set up
 import django
-django.setup()
+#django.setup()
 
 # archivematicaCommon
 from archivematicaFunctions import get_file_checksum
@@ -93,4 +93,4 @@ for transfer_dir in os.listdir(transferPath):
             print('Checksum mismatch: ', filePath.replace(transferPath, '%TransferDirectory%'), file=sys.stderr)
             exitCode += 1
 
-quit(exitCode)
+sys.exit(exitCode)

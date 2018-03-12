@@ -52,9 +52,13 @@ import cPickle
 import logging
 import os
 from socket import gethostname
-import threading
+import multiprocessing
 import time
 import traceback
+
+import shlex
+import inline_task_runner
+import sys
 
 import django
 django.setup()
@@ -166,6 +170,14 @@ def _unexpected_error():
                           'stdError': traceback.format_exc()})
 
 
+def runTask(command_str, stdIn):
+    command = shlex.split(command_str)
+
+    if not command[0].endswith(".py"):
+        return executeOrRun('command', command_str, stdIn='', printing=True)
+
+    return inline_task_runner.run(command, stdIn)
+
 @auto_close_db
 def execute_command(gearman_worker, gearman_job):
     """Execute the command encoded in ``gearman_job`` and return its exit code,
@@ -184,8 +196,7 @@ def execute_command(gearman_worker, gearman_job):
     logger.info('<processingCommand>{%s}%s</processingCommand>',
                 task_uuid, script)
     try:
-        exit_code, std_out, std_error = executeOrRun(
-            'command', script, stdIn='', printing=True)
+        exit_code, std_out, std_error = runTask(script, '')
     except OSError:
         logger.exception('Execution failed')
         return cPickle.dumps({'exitCode': 1,
@@ -199,10 +210,10 @@ def execute_command(gearman_worker, gearman_job):
 
 
 @auto_close_db
-def start_thread(thread_number):
-    """Setup a gearman client, for the thread."""
+def start_worker(worker_number):
+    """Setup a gearman client, for the worker."""
     gm_worker = gearman.GearmanWorker([django_settings.GEARMAN_SERVER])
-    host_id = '{}_{}'.format(gethostname(), thread_number)
+    host_id = '{}_{}'.format(gethostname(), worker_number)
     gm_worker.set_client_id(host_id)
     for client_script in supported_modules:
         logger.info('Registering: %s', client_script)
@@ -221,15 +232,15 @@ def start_thread(thread_number):
                 fail_sleep += fail_sleep_incrementor
 
 
-def start_threads(t=1):
-    """Start a processing thread for each core (t=0), or a specified number of
-    threads.
+def start_workers(t=1):
+    """Start a processing worker for each core (t=0), or a specified number of
+    workers.
     """
     if t == 0:
         from externals.detectCores import detectCPUs
         t = detectCPUs()
     for i in range(t):
-        t = threading.Thread(target=start_thread, args=(i + 1,))
+        t = multiprocessing.Process(target=start_worker, args=(i + 1,))
         t.daemon = True
         t.start()
 
@@ -237,7 +248,7 @@ def start_threads(t=1):
 if __name__ == '__main__':
     try:
         load_supported_modules(django_settings.CLIENT_MODULES_FILE)
-        start_threads(django_settings.NUMBER_OF_TASKS)
+        start_workers(django_settings.NUMBER_OF_TASKS)
         while True:
             time.sleep(100)
     except (KeyboardInterrupt, SystemExit):

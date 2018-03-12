@@ -27,7 +27,7 @@ import csv
 import os
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import File
 
@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     if not os.path.isfile(fileLabels):
         print("No such file:", fileLabels)
-        exit(0)
+        sys.exit(0)
 
     # use universal newline mode to support unusual newlines, like \r
     with open(fileLabels, 'rbU') as f:

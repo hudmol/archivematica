@@ -15,7 +15,7 @@ from agentarchives.archivesspace import ArchivesSpaceClient
 
 # initialize Django (required for Django 1.7)
 import django
-django.setup()
+#django.setup()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,10 +43,10 @@ def get_files_from_dip(dip_location, dip_name, dip_uuid):
         else:
             logger.error("no files in " + mydir)
             raise ValueError("cannot find dip")
-            exit(2)
+            sys.exit(2)
     except Exception:
         raise
-        exit(3)
+        sys.exit(3)
 
 
 def get_pairs(dip_uuid):

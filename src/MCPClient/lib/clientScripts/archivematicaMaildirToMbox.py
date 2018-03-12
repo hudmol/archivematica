@@ -37,9 +37,9 @@ if __name__ == "__main__":
     fileDic = getFileDic(fileFullPath)
     if 'path' not in fileDic:
         print("no path in file", file=sys.stderr)
-        exit(1)
+        sys.exit(1)
     maildirPath = fileDic['path'].replace('%transferDirectory%', sipDirectory + "/", 1)
     print(maildirPath, " -> ", mboxOutputFileFullPath)
     maildir2mailbox2(maildirPath, mboxOutputFileFullPath)
     print("Done")
-    exit(0)
+    sys.exit(0)

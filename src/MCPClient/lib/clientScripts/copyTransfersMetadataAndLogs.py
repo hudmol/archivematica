@@ -29,7 +29,7 @@ from optparse import OptionParser
 import traceback
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import File, SIP
 

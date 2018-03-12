@@ -9,7 +9,7 @@ import os
 import uuid
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main import models
 from fpr import models as fpr_models

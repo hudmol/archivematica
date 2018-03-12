@@ -32,4 +32,4 @@ if __name__ == '__main__':
         if files is not None and files != []:
             ret = exitInidcatingThereAreObjects
             break
-    exit(ret)
+    sys.exit(ret)

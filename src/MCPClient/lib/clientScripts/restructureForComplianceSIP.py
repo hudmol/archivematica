@@ -7,7 +7,7 @@ import shutil
 
 # fileOperations requires Django to be set up
 import django
-django.setup()
+#django.setup()
 # archivematicaCommon
 import archivematicaFunctions
 from archivematicaFunctions import REQUIRED_DIRECTORIES, OPTIONAL_FILES

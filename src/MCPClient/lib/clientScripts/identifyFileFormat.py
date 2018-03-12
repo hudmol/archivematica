@@ -6,7 +6,7 @@ import sys
 import uuid
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from fpr.models import IDCommand, IDRule, FormatVersion
 from main.models import FileFormatVersion, File, FileID, UnitVariable

@@ -26,7 +26,7 @@ import os
 import sys
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import Transfer
 
@@ -46,7 +46,7 @@ def extract(target, destinationDirectory):
         if exitC != 0:
             print(stdOut)
             print("Failed extraction: ", command, "\r\n", stdErr, file=sys.stderr)
-            exit(exitC)
+            sys.exit(exitC)
     else:
         print('Untarring...')
 
@@ -57,7 +57,7 @@ def extract(target, destinationDirectory):
         if exitC != 0:
             print(stdOut)
             print("Failed to untar: ", command, "\r\n", stdErr, file=sys.stderr)
-            exit(exitC)
+            sys.exit(exitC)
 
 
 if __name__ == '__main__':

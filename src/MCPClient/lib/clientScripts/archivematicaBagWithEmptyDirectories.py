@@ -26,7 +26,7 @@ import os
 import sys
 
 import django
-django.setup()
+#django.setup()
 
 # archivematicaCommon
 from archivematicaFunctions import get_setting

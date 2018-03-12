@@ -27,7 +27,7 @@ import argparse
 import os
 
 import django
-django.setup()
+#django.setup()
 from main.models import File
 
 

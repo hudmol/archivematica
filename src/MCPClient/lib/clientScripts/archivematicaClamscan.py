@@ -361,7 +361,7 @@ def scan_file(file_uuid, path, date, task_uuid):
 
 
 def main(args):
-    django.setup()
+    #django.setup()
 
     parser = get_parser()
     args = parser.parse_args(args)

@@ -9,7 +9,7 @@ import re
 import uuid
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from django.utils import timezone
 from main.models import UnitVariable

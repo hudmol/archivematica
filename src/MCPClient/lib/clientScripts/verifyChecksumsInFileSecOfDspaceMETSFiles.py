@@ -50,7 +50,7 @@ def verifyMetsFileSecChecksums(metsFile, date, taskUUID, relativeDirectory="./")
             # eventDetail = 'program="python"; module="hashlib.{}()"'.format(checksumType)
         else:
             print("Unsupported checksum type: %s" % (checksumType.__str__()), file=sys.stderr)
-            exit(300)
+            sys.exit(300)
 
         if checksum != checksum2:
             eventOutcome = "Fail"
@@ -70,4 +70,4 @@ if __name__ == '__main__':
     taskUUID = sys.argv[3]
 
     ret = verifyMetsFileSecChecksums(metsFile, date, taskUUID, relativeDirectory=os.path.dirname(metsFile) + "/")
-    quit(ret)
+    sys.exit(ret)

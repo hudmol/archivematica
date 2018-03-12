@@ -25,7 +25,7 @@ import uuid
 
 # fileOperations requires Django to be set up
 import django
-django.setup()
+#django.setup()
 
 from main.models import File, FileFormatVersion
 

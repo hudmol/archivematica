@@ -28,7 +28,7 @@ import lxml.etree as etree
 from xml.sax.saxutils import quoteattr
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import File
 

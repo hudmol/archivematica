@@ -36,7 +36,7 @@ import traceback
 from uuid import uuid4
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from django.utils import timezone
 from main.models import Agent, Derivation, Directory, DublinCore, Event, File, FileID, FPCommandOutput, SIP, SIPArrange

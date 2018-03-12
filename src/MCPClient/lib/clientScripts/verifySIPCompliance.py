@@ -73,4 +73,4 @@ if __name__ == '__main__':
     if ret != 0:
         import time
         time.sleep(10)
-    quit(ret)
+    sys.exit(ret)

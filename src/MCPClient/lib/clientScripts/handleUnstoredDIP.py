@@ -30,7 +30,7 @@ import shutil
 import sys
 
 import django
-django.setup()
+#django.setup()
 # archivematicaCommon
 from custom_handlers import get_script_logger
 

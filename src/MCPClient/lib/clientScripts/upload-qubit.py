@@ -36,12 +36,12 @@ from custom_handlers import get_script_logger
 import requests
 
 import django
-django.setup()
+#django.setup()
 from django.conf import settings as mcpclient_settings
 # dashboard
 import main.models as models
 
-# moved after django.setup()
+# moved after #django.setup()
 logger = get_script_logger("archivematica.upload.qubit")
 
 PREFIX = "[uploadDIP]"

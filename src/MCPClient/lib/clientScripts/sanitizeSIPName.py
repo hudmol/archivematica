@@ -25,7 +25,7 @@ from __future__ import print_function
 import sys
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import SIP, Transfer
 
@@ -56,7 +56,7 @@ if __name__ == '__main__':
         locationColumn = 'currentlocation'
     else:
         print("invalid unit type: ", unitType, file=sys.stderr)
-        exit(1)
+        sys.exit(1)
     dst = sanitizePath(SIPDirectory)
     if SIPDirectory != dst:
         dst = dst.replace(sharedDirectoryPath, "%sharedPath%", 1) + "/"

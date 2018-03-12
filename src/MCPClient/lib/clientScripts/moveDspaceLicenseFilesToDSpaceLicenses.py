@@ -27,7 +27,7 @@ import lxml.etree as etree
 
 # fileOperations requires Django to be set up
 import django
-django.setup()
+#django.setup()
 # archivematicaCommon
 from custom_handlers import get_script_logger
 from fileOperations import updateFileLocation
@@ -79,4 +79,4 @@ if __name__ == '__main__':
     transferUUID = sys.argv[5]
 
     ret = verifyMetsFileSecChecksums(metsFile, date, taskUUID, transferDirectory, transferUUID, relativeDirectory=os.path.dirname(metsFile) + "/")
-    quit(ret)
+    sys.exit(ret)

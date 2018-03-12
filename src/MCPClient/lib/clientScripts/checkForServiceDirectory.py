@@ -23,11 +23,12 @@
 
 from __future__ import print_function
 import os
+import sys
 from optparse import OptionParser
 import re
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import File
 
@@ -120,7 +121,7 @@ if __name__ == '__main__':
     if not os.path.isdir(serviceDirectory):
         print("no service directory in this sip")
         # regular(SIPDirectory, objectsDirectory, SIPUUID, date)
-        exit(0)
+        sys.exit(0)
 
     exitCode = something(SIPDirectory, serviceDirectory, objectsDirectory, SIPUUID, date)
-    exit(exitCode)
+    sys.exit(exitCode)

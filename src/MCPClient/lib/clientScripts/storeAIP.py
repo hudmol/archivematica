@@ -29,7 +29,7 @@ from uuid import uuid4
 
 # storageService requires Django to be set up
 import django
-django.setup()
+#django.setup()
 from metsrw.plugins import premisrw
 
 from main.models import UnitVariable, Event, Agent, DublinCore

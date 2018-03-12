@@ -27,7 +27,7 @@ import sys
 import shutil
 
 import django
-django.setup()
+#django.setup()
 
 # dashboard
 from main.models import Job, SIP
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     METSPath = os.path.join(unitPath, "metadata/submissionDocumentation/data/", "METS.%s.xml" % (originalSIPUUID))
     if not os.path.isfile(METSPath):
         print("Mets file not found: ", METSPath, file=sys.stderr)
-        exit(-1)
+        sys.exit(-1)
 
     # move mets to DIP
     src = METSPath

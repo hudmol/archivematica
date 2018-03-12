@@ -16,7 +16,7 @@ from django.utils import timezone
 import transcoder
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from fpr.models import FPRule
 from main.models import Derivation, FileFormatVersion, File, FileID

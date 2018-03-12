@@ -28,7 +28,7 @@ import sys
 from custom_handlers import get_script_logger
 
 import django
-django.setup()
+#django.setup()
 from django.db import connection
 # dashboard
 from main.models import File, FileID, FileFormatVersion

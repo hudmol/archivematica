@@ -27,7 +27,7 @@ import sys
 import shutil
 
 import django
-django.setup()
+#django.setup()
 from main.models import Transfer, SIP
 
 from verifyBAG import verify_bag

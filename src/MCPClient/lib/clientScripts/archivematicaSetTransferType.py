@@ -23,7 +23,7 @@
 import sys
 
 import django
-django.setup()
+#django.setup()
 # dashboard
 from main.models import Transfer
 

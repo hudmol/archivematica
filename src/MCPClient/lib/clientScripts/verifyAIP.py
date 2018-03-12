@@ -9,7 +9,7 @@ from custom_handlers import get_script_logger
 from executeOrRunSubProcess import executeOrRun
 
 import django
-django.setup()
+#django.setup()
 from django.conf import settings as mcpclient_settings
 
 
