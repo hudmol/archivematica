@@ -11,7 +11,8 @@ from lxml import etree
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.abspath(os.path.join(THIS_DIR, '../lib/clientScripts')))
-import archivematicaCreateMETS2
+from job import Job
+import create_mets_v2
 import archivematicaCreateMETSMetadataCSV
 import archivematicaCreateMETSRights
 
@@ -35,7 +36,7 @@ class TestNormativeStructMap(TestCase):
     def test_path_to_fsitems(self):
         """It should return 4 tuple instances"""
         os.mkdir(os.path.join(self.sip_object_dir, 'empty_dir'))
-        fsitems = archivematicaCreateMETS2.get_paths_as_fsitems(
+        fsitems = create_mets_v2.get_paths_as_fsitems(
             self.sip_dir, self.sip_object_dir)
         assert len(fsitems) == 4
         assert isinstance(fsitems[0], tuple)
@@ -45,7 +46,7 @@ class TestNormativeStructMap(TestCase):
 
     def test_normative_structmap_creation(self):
         """It should return an etree Element instance."""
-        normativeStructMap = archivematicaCreateMETS2.get_normative_structmap(
+        normativeStructMap = create_mets_v2.get_normative_structmap(
             self.sip_dir, self.sip_object_dir, {})
         assert isinstance(normativeStructMap, etree._Element)
 
@@ -60,7 +61,7 @@ class TestDublinCore(TestCase):
     def test_get_dublincore(self):
         """It should create a Dublin Core element from the database info."""
         # Generate DC element from DB
-        dc_elem = archivematicaCreateMETS2.getDublinCore(self.siptypeuuid, self.sipuuid)
+        dc_elem = create_mets_v2.getDublinCore(self.siptypeuuid, self.sipuuid)
 
         # Verify created correctly
         assert dc_elem is not None
@@ -101,13 +102,13 @@ class TestDublinCore(TestCase):
         """It should not create a Dublin Core element if no info found."""
         sipuuid = 'dnednedn-5bd2-4249-84a1-2f00f725b981'
 
-        dc_elem = archivematicaCreateMETS2.getDublinCore(self.siptypeuuid, sipuuid)
+        dc_elem = create_mets_v2.getDublinCore(self.siptypeuuid, sipuuid)
         assert dc_elem is None
 
     def test_create_dc_dmdsec_dc_exists(self):
         """It should create a dmdSec if DC information exists."""
         # Generate dmdSec if DC exists
-        dmdsec_elem, dmdid = archivematicaCreateMETS2.createDublincoreDMDSecFromDBData(self.siptypeuuid, self.sipuuid, THIS_DIR)
+        dmdsec_elem, dmdid = create_mets_v2.createDublincoreDMDSecFromDBData(Job("stub", "stub", []), self.siptypeuuid, self.sipuuid, THIS_DIR)
         # Verify created correctly
         assert dmdsec_elem is not None
         assert dmdsec_elem.tag == '{http://www.loc.gov/METS/}dmdSec'
@@ -125,7 +126,7 @@ class TestDublinCore(TestCase):
     def test_create_dc_dmdsec_no_dc_no_transfers_dir(self):
         """It should not fail if no transfers directory exists."""
         badsipuuid = 'dnednedn-5bd2-4249-84a1-2f00f725b981'
-        dmdsec_elem = archivematicaCreateMETS2.createDublincoreDMDSecFromDBData(self.siptypeuuid, badsipuuid, THIS_DIR)
+        dmdsec_elem = create_mets_v2.createDublincoreDMDSecFromDBData(Job("stub", "stub", []), self.siptypeuuid, badsipuuid, THIS_DIR)
         # Expect no element
         assert dmdsec_elem is None
 
@@ -138,7 +139,7 @@ class TestDublinCore(TestCase):
             os.remove(os.path.join(empty_transfers_sip, 'objects', 'metadata', 'transfers', '.gitignore'))
         except OSError:
             pass
-        dmdsec_elem = archivematicaCreateMETS2.createDublincoreDMDSecFromDBData(self.siptypeuuid, badsipuuid, empty_transfers_sip)
+        dmdsec_elem = create_mets_v2.createDublincoreDMDSecFromDBData(Job("stub", "stub", []), self.siptypeuuid, badsipuuid, empty_transfers_sip)
         assert dmdsec_elem is None
         # Reset directory state
         with open(os.path.join(empty_transfers_sip, 'objects', 'metadata', 'transfers', '.gitignore'), 'w'):
@@ -170,7 +171,7 @@ class TestDublinCore(TestCase):
             ("dcterms.isPartOf", ["AIC#42"]),
         ])
         # Test
-        ret = archivematicaCreateMETS2.createDmdSecsFromCSVParsedMetadata(data)
+        ret = create_mets_v2.createDmdSecsFromCSVParsedMetadata(Job("stub", "stub", []), data)
         # Verify
         assert ret
         assert len(ret) == 1
@@ -226,7 +227,7 @@ class TestDublinCore(TestCase):
             ("Long Description", ['This is about how glaives are used in the Yamani Islands'])
         ])
         # Test
-        ret = archivematicaCreateMETS2.createDmdSecsFromCSVParsedMetadata(data)
+        ret = create_mets_v2.createDmdSecsFromCSVParsedMetadata(Job("stub", "stub", []), data)
         # Verify
         assert ret
         assert len(ret) == 1
@@ -261,7 +262,7 @@ class TestDublinCore(TestCase):
             ("Long Description", ['This is about how glaives are used in the Yamani Islands'])
         ])
         # Test
-        ret = archivematicaCreateMETS2.createDmdSecsFromCSVParsedMetadata(data)
+        ret = create_mets_v2.createDmdSecsFromCSVParsedMetadata(Job("stub", "stub", []), data)
         # Verify
         assert ret
         assert len(ret) == 2
@@ -310,7 +311,7 @@ class TestDublinCore(TestCase):
         """It should not create dmdSecs with no parsed metadata."""
         data = {}
         # Test
-        ret = archivematicaCreateMETS2.createDmdSecsFromCSVParsedMetadata(data)
+        ret = create_mets_v2.createDmdSecsFromCSVParsedMetadata(Job("stub", "stub", []), data)
         # Verify
         assert ret == []
 
@@ -321,7 +322,7 @@ class TestDublinCore(TestCase):
             ("Contributor", ["Yuki", u"雪 ユキ".encode('utf8')]),
         ])
         # Test
-        ret = archivematicaCreateMETS2.createDmdSecsFromCSVParsedMetadata(data)
+        ret = create_mets_v2.createDmdSecsFromCSVParsedMetadata(Job("stub", "stub", []), data)
         # Verify
         assert ret
         assert len(ret) == 2
@@ -384,7 +385,7 @@ class TestCSVMetadata(TestCase):
                 writer.writerow(row)
 
         # Run test
-        dc = archivematicaCreateMETSMetadataCSV.parseMetadataCSV('metadata.csv')
+        dc = archivematicaCreateMETSMetadataCSV.parseMetadataCSV(Job("stub", "stub", []), 'metadata.csv')
         # Verify
         assert dc
         assert 'objects/foo.jpg' in dc
@@ -418,7 +419,7 @@ class TestCSVMetadata(TestCase):
                 writer.writerow(row)
 
         # Run test
-        dc = archivematicaCreateMETSMetadataCSV.parseMetadataCSV('metadata.csv')
+        dc = archivematicaCreateMETSMetadataCSV.parseMetadataCSV(Job("stub", "stub", []), 'metadata.csv')
         # Verify
         assert dc
         assert 'objects/foo.jpg' in dc
@@ -441,7 +442,7 @@ class TestCSVMetadata(TestCase):
                 writer.writerow(row)
 
         # Run test
-        dc = archivematicaCreateMETSMetadataCSV.parseMetadataCSV('metadata.csv')
+        dc = archivematicaCreateMETSMetadataCSV.parseMetadataCSV(Job("stub", "stub", []), 'metadata.csv')
         # Verify
         assert dc
         assert 'objects/foo.jpg' in dc
@@ -462,7 +463,7 @@ class TestCSVMetadata(TestCase):
                 writer.writerow(row)
 
         # Run test
-        dc = archivematicaCreateMETSMetadataCSV.parseMetadataCSV('metadata.csv')
+        dc = archivematicaCreateMETSMetadataCSV.parseMetadataCSV(Job("stub", "stub", []), 'metadata.csv')
         # Verify
         assert dc
         assert len(dc) == 1
@@ -482,7 +483,7 @@ class TestCreateDigiprovMD(TestCase):
         It should link Events only with Agents for that Event
         It should only include Agents used by that file
         """
-        ret = archivematicaCreateMETS2.createDigiprovMD("ae8d4290-fe52-4954-b72a-0f591bee2e2f")
+        ret = create_mets_v2.createDigiprovMD("ae8d4290-fe52-4954-b72a-0f591bee2e2f")
         assert len(ret) == 9
         # Events
         assert ret[0][0].attrib['MDTYPE'] == 'PREMIS:EVENT'
@@ -532,7 +533,7 @@ class TestRights(TestCase):
         elem = etree.Element("{info:lc/xmlns/premis-v2}rightsStatement", nsmap={'premis': NSMAP['premis']})
         statement = RightsStatement.objects.get(id=1)
         # Test
-        archivematicaCreateMETSRights.getrightsGranted(statement, elem)
+        archivematicaCreateMETSRights.getrightsGranted(Job("stub", "stub", []), statement, elem)
         # Verify
         assert len(elem) == 1
         rightsgranted = elem[0]
