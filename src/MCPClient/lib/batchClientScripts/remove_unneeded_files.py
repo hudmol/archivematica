@@ -14,6 +14,7 @@ import shutil
 
 # databaseFunctions requires Django to be set up
 import django
+from django.db import transaction
 django.setup()
 # archivematicaCommon
 from custom_handlers import get_script_logger
@@ -38,10 +39,11 @@ def remove_file(target_file, file_uuid):
 
 
 def call(jobs):
-    for job in jobs:
-        logger = get_script_logger("archivematica.mcp.client.removeUnneededFiles")
+    with transaction.atomic():
+        for job in jobs:
+            logger = get_script_logger("archivematica.mcp.client.removeUnneededFiles")
 
-        target = job.args[1]
-        file_uuid = job.args[2]
+            target = job.args[1]
+            file_uuid = job.args[2]
 
-        job.set_status(remove_file(target, file_uuid))
+            job.set_status(remove_file(target, file_uuid))

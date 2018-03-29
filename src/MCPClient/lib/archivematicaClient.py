@@ -187,8 +187,6 @@ class Job():
         self.error = ""
 
     def dump(self):
-        print [self.name, self.int_code, self.status_code, self.output, self.error]
-
         return (("#<TASK %s; EXIT: %d; CODE: %s\n" +
                 "STDOUT: %s\n" +
                 "STDERR: %s\n" +
@@ -336,15 +334,12 @@ def start_gearman_worker():
     host_id = '{}_1'.format(gethostname())
     gm_worker.set_client_id(host_id)
     for client_script in supported_modules:
-        logger.info('Registering: %s', client_script)
         gm_worker.register_task(client_script, safe_execute_command)
-        logger.info('REGISTERED: %s', client_script)
     fail_max_sleep = 30
     fail_sleep = 1
     fail_sleep_incrementor = 2
     while True:
         try:
-            logger.info("DOING SOMETHING")
             gm_worker.work()
         except gearman.errors.ServerUnavailable as inst:
             logger.error('Gearman server is unavailable: %s. Retrying in %d'
