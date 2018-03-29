@@ -1,5 +1,11 @@
 #!/usr/bin/env python2
 
+# RELOAD DURING DEVELOPMENT:
+#
+#  docker exec compose_archivematica-mcp-client_1 touch /tmp/continue.txt
+
+
+
 """Archivematica Client (Gearman Worker)
 
 This executable does the following.
@@ -65,6 +71,11 @@ from main.models import Task
 from databaseFunctions import auto_close_db, getUTCDate
 from executeOrRunSubProcess import executeOrRun
 
+from django.db import transaction
+import batch_development
+import shlex
+import importlib
+import traceback
 
 logger = logging.getLogger('archivematica.mcp.client')
 
@@ -166,11 +177,124 @@ def _unexpected_error():
                           'stdError': traceback.format_exc()})
 
 
-@auto_close_db
+class Job():
+    def __init__(self, args):
+        self.args = args
+        self.int_code = 0
+        self.status_code = 'success'
+        self.output = ""
+        self.error = ""
+
+    def dump(self):
+        return (("#<EXIT: %d; CODE: %s\n" +
+                "STDOUT: %s\n" +
+                "STDERR: %s\n" +
+                "\n>") % (self.int_code, self.status_code, self.output, self.error))
+
+    def set_status(self, int_code, status_code='success'):
+        self.int_code = int_code
+        self.status_code = status_code
+
+    def write_output(self, s):
+        self.output += s
+
+    def write_error(self, s):
+        self.error += s
+
+    def get_exit_code(self):
+        return self.int_code
+
+    def get_stdout(self):
+        return self.output
+
+    def get_stderr(self):
+        return self.error
+
+
+def handle_batch_task(gearman_job, gearman_worker):
+    module_name = batch_development.converted_modules.get(gearman_job.task)
+    task_uuid = str(gearman_job.unique)
+
+    gearman_data = cPickle.loads(gearman_job.data)
+    arguments = gearman_data['arguments']
+    if isinstance(arguments, unicode):
+        arguments = arguments.encode('utf-8')
+
+    utc_date = getUTCDate()
+    replacements = (replacement_dict.items() + 
+                    {'%date%': utc_date.isoformat(),
+                     '%taskUUID%': task_uuid,
+                     '%jobCreatedDate%': gearman_data['createdDate']}.items())
+
+    for var, val in replacements:
+        arguments = arguments.replace(var, val)
+
+    job = Job(shlex.split(arguments))
+
+    module = importlib.import_module("batchClientScripts." + module_name)
+    reload(module)
+    module.call([job])
+
+    return job
+
+class DevelopmentRollback(Exception):
+    pass
+
+def safe_execute_command(gearman_worker, gearman_job):
+    try:
+        return execute_command(gearman_worker, gearman_job)
+    except Exception as e:
+        print "COMPLETELY FAILED: %s" % (str(e))
+        traceback.print_exc()
+        raise e
+
+def wait_for_next_round():
+    loops = 0
+    while True:
+        loops += 1
+
+        if os.path.isfile("/tmp/continue.txt"):
+            os.remove("/tmp/continue.txt")
+            break
+
+        if (loops % 50) == 0:
+            logger.info("Touch file /tmp/continue.txt to continue")
+        time.sleep(0.1)
+
+
 def execute_command(gearman_worker, gearman_job):
     """Execute the command encoded in ``gearman_job`` and return its exit code,
     standard output and standard error as a pickled dict.
     """
+    logger.info("DOING A THING")
+    logger.info("TASK: %s" % (gearman_job.task))
+    logger.info("Converted modules: %s" % (batch_development.converted_modules))
+
+    if gearman_job.task in batch_development.converted_modules:
+        logger.info("A converted module!")
+        logger.info("%s in %s?" % (batch_development.converted_modules.get(gearman_job.task), batch_development.modules_under_development))
+        while batch_development.converted_modules.get(gearman_job.task) in batch_development.modules_under_development:
+            try:
+                with transaction.atomic():
+                    try:
+                        job = handle_batch_task(gearman_job, gearman_worker)
+                        logger.info("PRODUCED JOB: %s" % (job.dump()))
+                        raise DevelopmentRollback()
+                    except:
+                        traceback.print_exc()
+                        raise DevelopmentRollback()
+            except DevelopmentRollback:
+                wait_for_next_round()
+
+        # Run the batch version of this task
+        job = handle_batch_task(gearman_job, gearman_worker)
+
+        logger.info("RETURNING")
+        return cPickle.dumps({'exitCode': job.get_exit_code(),
+                              'stdOut': job.get_stdout(),
+                              'stdError': job.get_stderr()})
+
+
     try:
         script, task_uuid = _process_gearman_job(
             gearman_job, gearman_worker)
@@ -200,20 +324,21 @@ def execute_command(gearman_worker, gearman_job):
                           'stdError': std_error})
 
 
-@auto_close_db
-def start_thread(thread_number):
+def start_gearman_worker():
     """Setup a gearman client, for the thread."""
     gm_worker = gearman.GearmanWorker([django_settings.GEARMAN_SERVER])
-    host_id = '{}_{}'.format(gethostname(), thread_number)
+    host_id = '{}_1'.format(gethostname())
     gm_worker.set_client_id(host_id)
     for client_script in supported_modules:
         logger.info('Registering: %s', client_script)
-        gm_worker.register_task(client_script, execute_command)
+        gm_worker.register_task(client_script, safe_execute_command)
+        logger.info('REGISTERED: %s', client_script)
     fail_max_sleep = 30
     fail_sleep = 1
     fail_sleep_incrementor = 2
     while True:
         try:
+            logger.info("DOING SOMETHING")
             gm_worker.work()
         except gearman.errors.ServerUnavailable as inst:
             logger.error('Gearman server is unavailable: %s. Retrying in %d'
@@ -222,25 +347,9 @@ def start_thread(thread_number):
             if fail_sleep < fail_max_sleep:
                 fail_sleep += fail_sleep_incrementor
 
-
-def start_threads(t=1):
-    """Start a processing thread for each core (t=0), or a specified number of
-    threads.
-    """
-    if t == 0:
-        from externals.detectCores import detectCPUs
-        t = detectCPUs()
-    for i in range(t):
-        t = threading.Thread(target=start_thread, args=(i + 1,))
-        t.daemon = True
-        t.start()
-
-
 if __name__ == '__main__':
     try:
         load_supported_modules(django_settings.CLIENT_MODULES_FILE)
-        start_threads(django_settings.NUMBER_OF_TASKS)
-        while True:
-            time.sleep(100)
+        start_gearman_worker()
     except (KeyboardInterrupt, SystemExit):
-        logger.info('Received keyboard interrupt, quitting threads.')
+        logger.info('Received keyboard interrupt, quitting.')
