@@ -178,21 +178,25 @@ def _unexpected_error():
 
 
 class Job():
-    def __init__(self, args):
-        self.args = args
+    def __init__(self, name, args):
+        self.name = name
+        self.args = [name] + args
         self.int_code = 0
         self.status_code = 'success'
         self.output = ""
         self.error = ""
 
     def dump(self):
-        return (("#<EXIT: %d; CODE: %s\n" +
+        print [self.name, self.int_code, self.status_code, self.output, self.error]
+
+        return (("#<TASK %s; EXIT: %d; CODE: %s\n" +
                 "STDOUT: %s\n" +
                 "STDERR: %s\n" +
-                "\n>") % (self.int_code, self.status_code, self.output, self.error))
+                "\n>") % (self.name, self.int_code, self.status_code, self.output, self.error))
 
     def set_status(self, int_code, status_code='success'):
-        self.int_code = int_code
+        if int_code:
+            self.int_code = int_code
         self.status_code = status_code
 
     def write_output(self, s):
@@ -229,7 +233,7 @@ def handle_batch_task(gearman_job, gearman_worker):
     for var, val in replacements:
         arguments = arguments.replace(var, val)
 
-    job = Job(shlex.split(arguments))
+    job = Job(gearman_job.task, shlex.split(arguments))
 
     module = importlib.import_module("batchClientScripts." + module_name)
     reload(module)
@@ -258,7 +262,7 @@ def wait_for_next_round():
             break
 
         if (loops % 50) == 0:
-            logger.info("Touch file /tmp/continue.txt to continue")
+            logger.info("\n\n*** Touch file /tmp/continue.txt to continue")
         time.sleep(0.1)
 
 
@@ -266,35 +270,37 @@ def execute_command(gearman_worker, gearman_job):
     """Execute the command encoded in ``gearman_job`` and return its exit code,
     standard output and standard error as a pickled dict.
     """
-    logger.info("DOING A THING")
-    logger.info("TASK: %s" % (gearman_job.task))
-    logger.info("Converted modules: %s" % (batch_development.converted_modules))
+    logger.info("\n\n*** RUNNING TASK: %s" % (gearman_job.task))
+    logger.info("\n\n*** CONVERTED MODULES: %s" % (batch_development.converted_modules))
+
+    reload(batch_development)
 
     if gearman_job.task in batch_development.converted_modules:
-        logger.info("A converted module!")
-        logger.info("%s in %s?" % (batch_development.converted_modules.get(gearman_job.task), batch_development.modules_under_development))
+        logger.info("\n\n*** Task %s is converted module!", gearman_job.task)
         while batch_development.converted_modules.get(gearman_job.task) in batch_development.modules_under_development:
+            logger.info("\n\n*** RUNNING TASK %s in development mode", gearman_job.task)
             try:
                 with transaction.atomic():
                     try:
                         job = handle_batch_task(gearman_job, gearman_worker)
-                        logger.info("PRODUCED JOB: %s" % (job.dump()))
+                        logger.info("\n\n*** PRODUCED JOB: %s" % (job.dump()))
                         raise DevelopmentRollback()
                     except:
                         traceback.print_exc()
                         raise DevelopmentRollback()
             except DevelopmentRollback:
                 wait_for_next_round()
+                reload(batch_development)
 
         # Run the batch version of this task
         job = handle_batch_task(gearman_job, gearman_worker)
 
-        logger.info("RETURNING")
         return cPickle.dumps({'exitCode': job.get_exit_code(),
                               'stdOut': job.get_stdout(),
                               'stdError': job.get_stderr()})
 
 
+    logger.info("\n\n*** TASK: %s has not been converted yet" % (gearman_job.task))
     try:
         script, task_uuid = _process_gearman_job(
             gearman_job, gearman_worker)
