@@ -22,7 +22,7 @@
 # @author Joseph Perry <joseph@artefactual.com>
 
 from linkTaskManager import LinkTaskManager
-from taskStandard import taskStandard
+from taskGroup import taskGroup
 import os
 import threading
 
@@ -31,6 +31,7 @@ import databaseFunctions
 from dicts import ReplacementDict
 from main.models import StandardTaskConfig
 
+import mcpClient
 
 class linkTaskManagerDirectories(LinkTaskManager):
     def __init__(self, jobChainLink, pk, unit):
@@ -66,12 +67,11 @@ class linkTaskManagerDirectories(LinkTaskManager):
             commandReplacementDic[key] = archivematicaFunctions.escapeForCommand(value)
         arguments, standardOutputFile, standardErrorFile = commandReplacementDic.replace(arguments, standardOutputFile, standardErrorFile)
 
-        self.task = taskStandard(self, execute, arguments, standardOutputFile, standardErrorFile, UUID=self.UUID)
-        databaseFunctions.logTaskCreatedSQL(self, commandReplacementDic, self.UUID, arguments)
-        t = threading.Thread(target=self.task.performTask)
-        t.daemon = True
-        t.start()
+        group = taskGroup(self, execute)
+        group.addTask(arguments,standardOutputFile, standardErrorFile, commandReplacementDic=commandReplacementDic)
+        group.logTaskCreatedSQL()
+        mcpClient.runTaskGroup(group, self.taskGroupFinished)
 
-    def taskCompletedCallBackFunction(self, task):
-        databaseFunctions.logTaskCompletedSQL(task)
-        self.jobChainLink.linkProcessingComplete(task.results["exitCode"], self.jobChainLink.passVar)
+    def taskGroupFinished(self, finishedTaskGroup):
+        finishedTaskGroup.logTaskCompletedSQL()
+        self.jobChainLink.linkProcessingComplete(finishedTaskGroup.calculateExitCode(), self.jobChainLink.passVar)

@@ -28,7 +28,6 @@ import threading
 
 # This project,  alphabetical by import source
 from linkTaskManager import LinkTaskManager
-from taskStandard import taskStandard
 import archivematicaFunctions
 import databaseFunctions
 from dicts import ChoicesDict, ReplacementDict
@@ -71,14 +70,16 @@ class linkTaskManagerGetMicroserviceGeneratedListInStdOut(LinkTaskManager):
             commandReplacementDic[key] = archivematicaFunctions.escapeForCommand(value)
         arguments, standardOutputFile, standardErrorFile = commandReplacementDic.replace(arguments, standardOutputFile, standardErrorFile)
 
-        self.task = taskStandard(self, execute, arguments, standardOutputFile, standardErrorFile, UUID=self.UUID)
-        databaseFunctions.logTaskCreatedSQL(self, commandReplacementDic, self.UUID, arguments)
-        t = threading.Thread(target=self.task.performTask)
-        t.daemon = True
-        t.start()
+        group = taskGroup(self, execute)
+        group.addTask(arguments,standardOutputFile, standardErrorFile)
+        group.logTaskCreatedSQL()
+        mcpClient.runTaskGroup(group, self.taskGroupFinished)
 
-    def taskCompletedCallBackFunction(self, task):
-        databaseFunctions.logTaskCompletedSQL(task)
+    def taskGroupFinished(self, finishedTaskGroup):
+        finishedTaskGroup.logTaskCompletedSQL()
+
+        task = finishedTaskGroup.subtasks()[0]
+
         try:
             choices = ChoicesDict.fromstring(task.results["stdOut"])
         except Exception:
@@ -97,4 +98,4 @@ class linkTaskManagerGetMicroserviceGeneratedListInStdOut(LinkTaskManager):
         else:
             self.jobChainLink.passVar = [choices]
 
-        self.jobChainLink.linkProcessingComplete(task.results["exitCode"], self.jobChainLink.passVar)
+        self.jobChainLink.linkProcessingComplete(finishedTaskGroup.calculateExitCode(), self.jobChainLink.passVar)

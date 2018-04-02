@@ -86,7 +86,10 @@ class jobChainLink:
         LOGGER.info('Running %s (unit %s)', self.description, self.unit.UUID)
         self.unit.reload()
 
+        LOGGER.info("Logging SQL...")
         logJobCreatedSQL(self)
+
+        LOGGER.info("Creating tasks...")
 
         if self.createTasks(taskType, taskTypePKReference) is None:
             self.getNextChainLinkPK(None)
@@ -94,11 +97,15 @@ class jobChainLink:
             # could return negative?
 
     def createTasks(self, taskType, taskTypePKReference):
+        print "RUNNING TASK TYPE %s" % (taskType)
+
         if taskType == constOneTask:
             linkTaskManagerDirectories(self, taskTypePKReference, self.unit)
         elif taskType == constTaskForEachFile:
             if self.reloadFileList:
+                print "Reloading file list"
                 self.unit.reloadFileList()
+                print "DONE"
             linkTaskManagerFiles(self, taskTypePKReference, self.unit)
         elif taskType == constSelectPathTask:
             linkTaskManagerChoice(self, taskTypePKReference, self.unit)

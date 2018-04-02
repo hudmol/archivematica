@@ -29,13 +29,15 @@ import time
 import uuid
 
 from linkTaskManager import LinkTaskManager
-from taskStandard import taskStandard
 import archivematicaFunctions
 import databaseFunctions
 from dicts import ReplacementDict
 from main.models import StandardTaskConfig, UnitVariable
 
 from django.conf import settings as django_settings
+
+import mcpClient
+from taskGroup import taskGroup
 
 LOGGER = logging.getLogger('archivematica.mcp.server')
 
@@ -86,6 +88,9 @@ class linkTaskManagerFiles(LinkTaskManager):
         for key, value in SIPReplacementDic.items():
             SIPReplacementDic[key] = archivematicaFunctions.escapeForCommand(value)
         self.tasksLock.acquire()
+
+        currentTaskGroup = None
+
         for file, fileUnit in unit.fileList.items():
             if filterFileEnd:
                 if not file.endswith(filterFileEnd):
@@ -99,7 +104,6 @@ class linkTaskManagerFiles(LinkTaskManager):
 
             standardOutputFile = self.standardOutputFile
             standardErrorFile = self.standardErrorFile
-            execute = self.execute
             arguments = self.arguments
 
             # Apply passvar replacement values
@@ -121,33 +125,40 @@ class linkTaskManagerFiles(LinkTaskManager):
             # Apply unit (SIP/Transfer) replacement values
             arguments, standardOutputFile, standardErrorFile = SIPReplacementDic.replace(arguments, standardOutputFile, standardErrorFile)
 
-            UUID = str(uuid.uuid4())
-            task = taskStandard(self, execute, arguments, standardOutputFile, standardErrorFile, outputLock=outputLock, UUID=UUID)
-            self.tasks[UUID] = task
-            databaseFunctions.logTaskCreatedSQL(self, commandReplacementDic, UUID, arguments)
-            t = threading.Thread(target=task.performTask)
-            t.daemon = True
-            while(django_settings.LIMIT_TASK_THREADS <= threading.activeCount()):
-                self.tasksLock.release()
-                time.sleep(django_settings.LIMIT_TASK_THREADS_SLEEP)
-                self.tasksLock.acquire()
-            t.start()
+            if currentTaskGroup == None or currentTaskGroup.count() > 100:
+                currentTaskGroup = taskGroup(self, self.execute)
+                self.tasks[currentTaskGroup.UUID] = currentTaskGroup
+
+            print "Adding a task to task group!"
+            currentTaskGroup.addTask(arguments, standardOutputFile, standardErrorFile,
+                                     outputLock=outputLock, commandReplacementDic=commandReplacementDic)
+
+        print "Running %d task groups" % (len(self.tasks.values()))
+
+        for tg in self.tasks.values():
+            tg.logTaskCreatedSQL()
+            print "Running a task group with %d subtasks" % (len(tg.subtasks()))
+            mcpClient.runTaskGroup(tg, self.taskGroupFinished)
 
         self.clearToNextLink = True
         self.tasksLock.release()
         if self.tasks == {}:
+            print "Nothing to do!  Processing complete with code %s" % (self.exitCode)
             self.jobChainLink.linkProcessingComplete(self.exitCode)
 
-    def taskCompletedCallBackFunction(self, task):
-        self.exitCode = max(self.exitCode, abs(task.results["exitCode"]))
-        databaseFunctions.logTaskCompletedSQL(task)
+    def taskGroupFinished(self, finishedTaskGroup):
+        print "Finished task group for: %s" % (finishedTaskGroup.execute)
+
+        finishedTaskGroup.logTaskCompletedSQL()
+
+        # Exit code is the maximum of all task groups
+        self.exitCode = max([finishedTaskGroup.calculateExitCode(), self.exitCode])
 
         self.tasksLock.acquire()
-        if task.UUID in self.tasks:
-            del self.tasks[task.UUID]
+        if finishedTaskGroup.UUID in self.tasks:
+            del self.tasks[finishedTaskGroup.UUID]
         else:
-            LOGGER.warning('Task UUID %s not in task list %s', task.UUID, self.tasks)
-            exit(1)
+            LOGGER.warning('TaskGroup UUID %s not in task list %s', finishedTaskGroup.UUID, self.tasks)
 
         if self.clearToNextLink is True and self.tasks == {}:
             LOGGER.debug('Proceeding to next link %s', self.jobChainLink.UUID)
