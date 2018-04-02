@@ -32,9 +32,11 @@ from django.db import transaction
 from django.conf import settings as mcpclient_settings
 
 from clamd import ClamdUnixSocket, ClamdNetworkSocket, BufferTooLongError, ConnectionError
-from custom_handlers import get_script_logger
+from custom_handlers import get_script_logger, CallbackHandler
 from databaseFunctions import insertIntoEvents
 from main.models import Event, File
+
+logger = get_script_logger("archivematica.mcp.client.clamscan")
 
 
 def clamav_version_parts(ver):
@@ -361,6 +363,7 @@ def call(jobs):
     with transaction.atomic():
         for job in jobs:
             logger = get_script_logger("archivematica.mcp.client.clamscan")
+            logger.addHandler(CallbackHandler(job.write_error, job.name))
 
             job.set_status(scan_file(*job.args[1:]))
 
