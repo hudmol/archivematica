@@ -33,6 +33,9 @@ import databaseFunctions
 from dicts import ChoicesDict, ReplacementDict
 from main.models import StandardTaskConfig
 
+from taskGroup import taskGroup
+import mcpClient
+
 LOGGER = logging.getLogger('archivematica.mcp.server')
 
 
@@ -71,7 +74,7 @@ class linkTaskManagerGetMicroserviceGeneratedListInStdOut(LinkTaskManager):
         arguments, standardOutputFile, standardErrorFile = commandReplacementDic.replace(arguments, standardOutputFile, standardErrorFile)
 
         group = taskGroup(self, execute)
-        group.addTask(arguments,standardOutputFile, standardErrorFile)
+        group.addTask(arguments, standardOutputFile, standardErrorFile, commandReplacementDic=commandReplacementDic)
         group.logTaskCreatedSQL()
         mcpClient.runTaskGroup(group, self.taskGroupFinished)
 
