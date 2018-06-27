@@ -219,7 +219,7 @@ def file_already_scanned(file_uuid):
         event_type='virus check').count()
 
 
-def record_event(file_uuid, date, scanner, passed):
+def queue_event(file_uuid, date, scanner, passed, event_queue):
     if passed is None or file_uuid == "None":
         return
 
@@ -236,13 +236,14 @@ def record_event(file_uuid, date, scanner, passed):
     logger.info(
         'Recording new event for file %s (outcome: %s)', file_uuid, outcome)
 
-    insertIntoEvents(
-        fileUUID=file_uuid,
-        eventIdentifierUUID=str(uuid.uuid4()),
-        eventType="virus check",
-        eventDateTime=date,
-        eventDetail=event_detail,
-        eventOutcome=outcome)
+    event_queue.append({
+        'fileUUID': file_uuid,
+        'eventIdentifierUUID': str(uuid.uuid4()),
+        'eventType': "virus check",
+        'eventDateTime': date,
+        'eventDetail': event_detail,
+        'eventOutcome': outcome
+    })
 
 
 def get_parser():
@@ -300,7 +301,7 @@ def get_size(file_uuid, path):
         return None
 
 
-def scan_file(file_uuid, path, date, task_uuid):
+def scan_file(file_uuid, path, date, task_uuid, event_queue):
     if file_already_scanned(file_uuid):
         logger.info('Virus scan already performed, not running scan again')
         return 0
@@ -354,7 +355,7 @@ def scan_file(file_uuid, path, date, task_uuid):
             logger.debug('passed=%s state=%s details=%s',
                          passed, state, details)
     finally:
-        record_event(file_uuid, date, scanner, passed)
+        queue_event(file_uuid, date, scanner, passed, event_queue)
 
     # If True or None, then we have no error, the file can move through the
     # process as expected...
@@ -362,7 +363,16 @@ def scan_file(file_uuid, path, date, task_uuid):
 
 
 def call(jobs):
+    event_queue = []
+
+    for job in jobs:
+        with job.JobContext(logger=logger):
+            job.set_status(scan_file(*job.args[1:], event_queue=event_queue))
+            logger.info('QUEUE UPDATED!')
+            logger.info(event_queue)
+
     with transaction.atomic():
-        for job in jobs:
-            with job.JobContext(logger=logger):
-                job.set_status(scan_file(*job.args[1:]))
+        for e in event_queue:
+            logger.info('LOG EVENT!')
+            logger.info(e)
+            insertIntoEvents(*e)
