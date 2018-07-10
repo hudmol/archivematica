@@ -20,6 +20,8 @@ from django.conf import settings as mcpclient_settings
 
 logger = get_script_logger("archivematica.mcp.client.indexAIP")
 
+INDEX_AIP_ELASTICSEARCH_TIMEOUT = 600
+
 
 def get_identifiers(job, sip_path):
     """Get additional identifiers to index."""
@@ -51,7 +53,7 @@ def index_aip(job):
         logger.info('Skipping indexing: indexing is currently disabled.')
         return 0
 
-    elasticSearchFunctions.setup_reading_from_conf(mcpclient_settings)
+    elasticSearchFunctions.setup(mcpclient_settings.ELASTICSEARCH_SERVER, INDEX_AIP_ELASTICSEARCH_TIMEOUT)
     client = elasticSearchFunctions.get_client()
 
     job.pyprint('SIP UUID:', sip_uuid)
