@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Archivematica.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.conf.urls import url
+from django.conf.urls import url, include
 from django.conf import settings
 
 from components.api import views
@@ -46,7 +46,7 @@ urlpatterns = [
     url(r'v2beta/package', views.package),
 
     # PAR endpoints
-    #url(r'beta/par/?$', views.par_swagger),
+    url(r'beta/par/swagger/?$', include('rest_framework_swagger.urls')),
     url(r'beta/par/fileFormats/?$', views.par_formats),
     url(r'beta/par/fileFormats/(?P<pronom_id>.+)', views.par_format),
     url(r'beta/par/tools/?$', views.par_tools),

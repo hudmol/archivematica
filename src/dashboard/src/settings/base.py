@@ -305,6 +305,7 @@ INSTALLED_APPS = [
 
     # For REST API
     'tastypie',
+    'rest_framework',
 
     'django_forms_bootstrap',
 
@@ -312,7 +313,7 @@ INSTALLED_APPS = [
     'longerusername',
 
     # Swagger
-    #'rest_framework_swagger',
+    'rest_framework_swagger',
 ]
 
 TEST_RUNNER = 'django.test.runner.DiscoverRunner'
