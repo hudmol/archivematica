@@ -1,3 +1,5 @@
+import json
+
 from rest_framework import routers, viewsets, mixins, serializers, routers
 from rest_framework.response import Response
 from fpr.models import FormatVersion, FPTool, FPRule
@@ -122,7 +124,8 @@ class FileFormatsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMi
                 format_versions = format_versions.all()
 
         except Exception as err:
-            LOGGER.error(err)
+            # LOGGER.error(err)
+            print err
             return Response({'error': True, 'message': 'Server failed to handle the request.'}, 502)
 
         return Response([self._to_par_file_format(fv) for fv in format_versions[offset:limit]])
@@ -153,7 +156,8 @@ class FileFormatsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMi
 
             FormatVersion.objects.create(**format_version)
         except Exception as err:
-            LOGGER.error(err)
+            # LOGGER.error(err)
+            print err
             return Response({'error': True, 'message': 'Server failed to handle the request.'}, 502)
 
         return Response({'message': 'File format successfully created.', 'uri': request.path + '/' + format_version['pronom_id']}, 201)
@@ -181,11 +185,11 @@ class ToolsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, m
         try:
             tools = FPTool.objects.all()[offset:limit]
         except Exception as err:
-            LOGGER.error(err)
+            # LOGGER.error(err)
+            print err
             return Response({'error': True, 'message': 'Server failed to handle the request.'}, 502)
 
         return Response([self._to_par_tool(fpt) for fpt in tools])
-
 
     def create(self, request):
         try:
@@ -193,7 +197,8 @@ class ToolsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, m
 
             created_tool = FPTool.objects.create(**tool)
         except Exception as err:
-            LOGGER.error(err)
+            # LOGGER.error(err)
+            print err
             return Response({'error': True, 'message': 'Server failed to handle the request.'}, 502)
 
         return Response({'message': 'Tool successfully created.', 'uri': request.path + '/' + created_tool.slug}, 201)
@@ -216,7 +221,8 @@ class PreservationActionTypesViewSet(ParMixin, mixins.ListModelMixin, viewsets.G
         try:
             rules = FPRule.objects.values('purpose').distinct()
         except Exception as err:
-            LOGGER.error(err)
+            # LOGGER.error(err)
+            print err
             return Response({'error': True, 'message': 'Server failed to handle the request.'}, 502)
 
         return Response([self._to_par_preservation_action_type(rule['purpose']) for rule in rules])
@@ -232,7 +238,8 @@ class PreservationActionsViewSet(ParMixin, mixins.ListModelMixin, viewsets.Gener
         try:
             rules = FPRule.objects.all()[offset:limit]
         except Exception as err:
-            LOGGER.error(err)
+            # LOGGER.error(err)
+            print err
             return Response({'error': True, 'message': 'Server failed to handle the request.'}, 502)
 
         return Response([self._to_par_preservation_action(fprule) for fprule in rules])
