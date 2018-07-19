@@ -1,6 +1,7 @@
 import json
 
 from rest_framework import routers, viewsets, mixins, serializers, routers
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from fpr.models import FormatVersion, FPTool, FPRule
 
@@ -13,22 +14,7 @@ class ParMixin(object):
         if offset != None and limit != None: limit = int(offset) + int(limit)
         return offset, limit
 
-    def _to_par_id(self, id, uuid):
-        return {
-            'guid': uuid,
-            'name': id,
-            }
-
-    def _to_par_file_format(self, format_version):
-        return {
-            'id': self._to_par_id(format_version.pronom_id, format_version.format.uuid),
-            'localLastModifiedDate': str(format_version.lastmodified),
-            'version': format_version.version,
-            'name': format_version.slug,
-            'description': format_version.description,
-            'types': [format_version.format.group.description],
-            }
-
+    # FIXME move to serializer
     def _to_fpr_format_version(self, file_format):
         return {
             'version': file_format.get('version'),
@@ -36,68 +22,27 @@ class ParMixin(object):
             'description': file_format.get('description'),
             }
 
-    def _to_fpr_format_group(self, group):
+class FileFormatSerializer(serializers.Serializer):
+
+    def _to_par_id(self, id, uuid):
         return {
-            'description': group,
+            'guid': uuid,
+            'name': id,
             }
 
-    def _to_fpr_format(self, format):
+    def to_representation(self, obj):
         return {
-            'description': format,
+            'id': self._to_par_id(obj.pronom_id, obj.format.uuid),
+            'localLastModifiedDate': str(obj.lastmodified),
+            'version': obj.version,
+            'name': obj.slug,
+            'description': obj.description,
+            'types': [obj.format.group.description],
             }
 
-    def _to_par_tool(self, tool):
-        return {
-            'toolId': tool.slug,
-            'toolVersion': tool.version,
-            'toolName': tool.description,
-            }
-
-    def _to_fpr_tool(self, tool):
-        return {
-            'description': tool.get('toolName'),
-            'version': tool.get('toolVersion'),
-            }
-
-    def _to_par_preservation_action_type(self, type):
-        return {
-            'id': self._to_par_id(type, type),
-            'label': type,
-            }
-
-    def _to_par_io_file(self, name):
-        return {
-            'type': 'File',
-            'name': name,
-            }
-
-    def _to_par_preservation_action(self, rule):
-        return {
-            'id': self._to_par_id(rule.uuid, rule.uuid),
-            'description': rule.command.description,
-            'type': self._to_par_preservation_action_type(rule.purpose),
-            'inputs': [self._to_par_io_file(rule.format.description)],
-            'outputs': [self._to_par_io_file(rule.command.output_format.description)],
-            'tool': self._to_par_tool(rule.command.tool),
-            }
-
-
-# class FileFormatSerializer(serializers.BaseSerializer):
-#     def _to_par_id(self, id, uuid):
-#         return {
-#             'guid': uuid,
-#             'name': id,
-#             }
-#
-#     def to_representation(self, obj):
-#         return {
-#             'id': self._to_par_id(obj.pronom_id, obj.format.uuid),
-#             'localLastModifiedDate': str(obj.lastmodified),
-#             'version': obj.version,
-#             'name': obj.slug,
-#             'description': obj.description,
-#             'types': [obj.format.group.description],
-#             }
+    def to_internal_value(self, data):
+        # FIXME do this
+        pass
 
 
 class FileFormatsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -105,6 +50,7 @@ class FileFormatsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMi
     lookup_value_regex = '[a-z]+\/[0-9]+'
     serializer_class = serializers.Serializer
     queryset = FormatVersion.active
+    pagination_class = LimitOffsetPagination
 
     def list(self, request):
         after = request.GET.get('modifiedAfter')
@@ -128,13 +74,13 @@ class FileFormatsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMi
             print err
             return Response({'error': True, 'message': 'Server failed to handle the request.'}, 502)
 
-        return Response([self._to_par_file_format(fv) for fv in format_versions[offset:limit]])
+        serializer = FileFormatSerializer(format_versions[offset:limit], many=True)
+        return Response(serializer.data)
 
 
     def create(self, request):
         try:
-            payload = json.loads(request.body)
-            format_version = self._to_fpr_format_version(payload)
+            format_version = self._to_fpr_format_version(request.data)
 
             # See if a format already exists for this version
             format = Format.objects.filter(description=format_version['description']).first()
@@ -160,12 +106,13 @@ class FileFormatsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMi
             print err
             return Response({'error': True, 'message': 'Server failed to handle the request.'}, 502)
 
-        return Response({'message': 'File format successfully created.', 'uri': request.path + '/' + format_version['pronom_id']}, 201)
+        return Response({'message': 'File format successfully created.', 'uri': request.path + format_version['pronom_id']}, 201)
 
     def retrieve(self, request, pronom_id=None):
         try:
             format_version = FormatVersion.active.filter(pronom_id=pronom_id)[0]
-            return Response(self._to_par_file_format(format_version))
+            serializer = FileFormatSerializer(format_version)
+            return Response(serializer.data)
         except FormatVersion.DoesNotExist:
             # FIXME doesn't hit this?
             return Response({'error': True, 'message': 'File format not found'}, 400)
@@ -173,11 +120,42 @@ class FileFormatsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMi
             return Response({'error': True, 'message': 'File format not found'}, 400)
 
 
+class ToolSerializer(serializers.Serializer):
+
+    def to_representation(self, tool):
+        return {
+            'toolId': tool.slug,
+            'toolVersion': tool.version,
+            'toolName': tool.description,
+            }
+
+    def to_internal_value(self, data):
+        toolName = data.get('toolName')
+        toolVersion = data.get('toolVersion')
+
+
+        if not toolName:
+                    raise serializers.ValidationError({
+                        'toolName': 'This field is required.'
+                    })
+        if not toolVersion:
+                    raise serializers.ValidationError({
+                        'toolVersion': 'This field is required.'
+                    })
+
+
+        return {
+            'description': toolName,
+            'version': toolVersion,
+            }
+
+
 class ToolsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
     lookup_field = 'slug'
     lookup_value_regex = '.*' #FIXME
-    serializer_class = serializers.Serializer
+    serializer_class = ToolSerializer
     queryset = FPTool.objects
+    pagination_class = LimitOffsetPagination
 
     def list(self, request):
         offset, limit = self._parse_offset_and_limit(request)
@@ -189,19 +167,23 @@ class ToolsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, m
             print err
             return Response({'error': True, 'message': 'Server failed to handle the request.'}, 502)
 
-        return Response([self._to_par_tool(fpt) for fpt in tools])
+        serializer = ToolSerializer(tools, many=True)
+        return Response(serializer.data)
 
     def create(self, request):
         try:
-            tool = self._to_fpr_tool(json.loads(request.body))
-
-            created_tool = FPTool.objects.create(**tool)
+            serializer = ToolSerializer(data=request.data)
+            if (serializer.is_valid()):
+                tool = self._to_fpr_tool(serializer.validated_data)
+                created_tool = FPTool.objects.create(**tool)
+            else:
+                return Response({'error': True, 'message': 'Invalid POST', 'errors': serializer.errors}, 502)
         except Exception as err:
             # LOGGER.error(err)
             print err
             return Response({'error': True, 'message': 'Server failed to handle the request.'}, 502)
 
-        return Response({'message': 'Tool successfully created.', 'uri': request.path + '/' + created_tool.slug}, 201)
+        return Response({'message': 'Tool successfully created.', 'uri': request.path + created_tool.slug}, 201)
 
 
     def retrieve(self, request, slug=None):
@@ -210,12 +192,31 @@ class ToolsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, m
         except FPTool.DoesNotExist:
             return Response({'error': True, 'message': 'Tool not found'}, 400)
 
-        return Response(self._to_par_tool(tool))
+        serializer = ToolSerializer(tool)
+        return Response(serializer.data)
+
+
+class PreservationActionTypeSerializer(serializers.Serializer):
+
+    def _to_par_id(self, id, uuid):
+        return {
+            'guid': uuid,
+            'name': id,
+            }
+
+    def to_representation(self, obj):
+        type = obj['purpose']
+
+        return {
+            'id': self._to_par_id(type, type),
+            'label': type,
+            }
 
 
 class PreservationActionTypesViewSet(ParMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
-    serializer_class = serializers.Serializer
+    serializer_class = PreservationActionTypeSerializer
     queryset = FPRule.objects
+    pagination_class = LimitOffsetPagination
 
     def list(self, request):
         try:
@@ -225,12 +226,52 @@ class PreservationActionTypesViewSet(ParMixin, mixins.ListModelMixin, viewsets.G
             print err
             return Response({'error': True, 'message': 'Server failed to handle the request.'}, 502)
 
-        return Response([self._to_par_preservation_action_type(rule['purpose']) for rule in rules])
+        serializer = PreservationActionTypeSerializer(rules, many=True)
+        return Response(serializer.data)
+
+
+class PreservationActionSerializer(serializers.Serializer):
+
+    def _to_par_tool(self, tool):
+        return {
+            'toolId': tool.slug,
+            'toolVersion': tool.version,
+            'toolName': tool.description,
+            }
+
+    def _to_par_id(self, id, uuid):
+        return {
+            'guid': uuid,
+            'name': id,
+            }
+
+    def _to_par_io_file(self, name):
+        return {
+            'type': 'File',
+            'name': name,
+            }
+
+    def _to_par_preservation_action_type(self, type):
+        return {
+            'id': self._to_par_id(type, type),
+            'label': type,
+            }
+
+    def to_representation(self, rule):
+        return {
+            'id': self._to_par_id(rule.uuid, rule.uuid),
+            'description': rule.command.description,
+            'type': self._to_par_preservation_action_type(rule.purpose),
+            'inputs': [self._to_par_io_file(rule.format.description)],
+            'outputs': [self._to_par_io_file(rule.command.output_format.description)],
+            'tool': self._to_par_tool(rule.command.tool),
+            }
 
 
 class PreservationActionsViewSet(ParMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
-    serializer_class = serializers.Serializer
+    serializer_class = PreservationActionSerializer
     queryset = FPRule.objects
+    pagination_class = LimitOffsetPagination
 
     def list(self, request):
         offset, limit = self._parse_offset_and_limit(request)
@@ -242,5 +283,5 @@ class PreservationActionsViewSet(ParMixin, mixins.ListModelMixin, viewsets.Gener
             print err
             return Response({'error': True, 'message': 'Server failed to handle the request.'}, 502)
 
-        return Response([self._to_par_preservation_action(fprule) for fprule in rules])
-
+        serializer = PreservationActionSerializer(rules, many=True)
+        return Response(serializer.data)
