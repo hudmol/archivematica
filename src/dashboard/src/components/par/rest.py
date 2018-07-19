@@ -3,7 +3,7 @@ import json
 from rest_framework import routers, viewsets, mixins, serializers, routers
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
-from fpr.models import FormatVersion, FPTool, FPRule
+from fpr.models import FormatVersion, FPTool, FPRule, Format, FormatGroup
 
 
 class ParMixin(object):
@@ -21,6 +21,17 @@ class ParMixin(object):
             'pronom_id': file_format.get('id'),
             'description': file_format.get('description'),
             }
+
+    def _to_fpr_format_group(self, group):
+        return {
+            'description': group,
+            }
+
+    def _to_fpr_format(self, format):
+        return {
+            'description': format,
+            }
+
 
 class FileFormatSerializer(serializers.Serializer):
 
@@ -87,12 +98,12 @@ class FileFormatsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMi
 
             if format == None:
                 # We need to create a format
-                group_name = payload.get('types', [format_version['description']])[0]
+                group_name = request.data.get('types', [format_version['description']])[0]
                 group = FormatGroup.objects.filter(description=group_name).first()
                 if group == None:
                     # And a group ... sigh
                     # Note: The db says a format doesn't need a group, but the dashboard blows up if it doesn't have one
-                    group = FormatGroup.objects.create(self._to_fpr_format_group(group_name))
+                    group = FormatGroup.objects.create(**self._to_fpr_format_group(group_name))
 
                 format_hash = self._to_fpr_format(format_version['description'])
                 format_hash['group_id'] = group.uuid
