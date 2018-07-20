@@ -65,6 +65,8 @@ class FileFormatsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMi
 
     def list(self, request):
         """
+        offset         -- Offset of the first record to show
+        limit          -- Limit the number of records to show
         modifiedAfter  -- Modified After (YYYY-MM-DD)
         modifiedBefore -- Modified Before (YYYY-MM-DD)
         """
