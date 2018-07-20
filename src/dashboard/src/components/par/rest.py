@@ -4,7 +4,7 @@ from rest_framework import routers, viewsets, mixins, serializers, routers
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from fpr.models import FormatVersion, FPTool, FPRule, Format, FormatGroup
-
+from datetime import datetime
 
 class ParMixin(object):
 
@@ -64,6 +64,11 @@ class FileFormatsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMi
     pagination_class = LimitOffsetPagination
 
     def list(self, request):
+        """
+        modifiedAfter  -- Modified After (YYYY-MM-DD)
+        modifiedBefore -- Modified Before (YYYY-MM-DD)
+        """
+
         after = request.GET.get('modifiedAfter')
         before = request.GET.get('modifiedBefore')
 

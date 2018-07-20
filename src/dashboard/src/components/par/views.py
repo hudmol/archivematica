@@ -44,7 +44,7 @@ from components.api.views import _api_endpoint
 
 # PAR related
 #from rest_framework_swagger.views import get_swagger_view
-from components.par import par
+#from components.par import par
 from fpr.models import Format, FormatGroup, FormatVersion, FPTool, FPRule
 from datetime import datetime
 
