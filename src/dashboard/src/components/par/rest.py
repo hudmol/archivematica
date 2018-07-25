@@ -3,7 +3,7 @@ import json
 from rest_framework import routers, viewsets, mixins, serializers, routers
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
-from rest_framework.authentication import BaseAuthentication, BasicAuthentication
+from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
 from fpr.models import FormatVersion, FPTool, FPRule, Format, FormatGroup
 from datetime import datetime
@@ -172,10 +172,6 @@ class ToolSerializer(serializers.Serializer):
             'version': toolVersion,
             }
 
-
-class ArchivematicaAuthentication(BaseAuthentication):
-    def authenticate(self, request):
-        return None
 
 class ToolsViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, ParViewSet):
     lookup_field = 'slug'
