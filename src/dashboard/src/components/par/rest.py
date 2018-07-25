@@ -3,10 +3,15 @@ import json
 from rest_framework import routers, viewsets, mixins, serializers, routers
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
+from rest_framework.authentication import BaseAuthentication, BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
 from fpr.models import FormatVersion, FPTool, FPRule, Format, FormatGroup
 from datetime import datetime
 
-class ParMixin(object):
+class ParViewSet(viewsets.GenericViewSet):
+
+    authentication_classes = (BasicAuthentication,)
+    permission_classes = (IsAuthenticated,)
 
     def _parse_offset_and_limit(self, request):
         offset = request.GET.get('offset')
@@ -56,7 +61,7 @@ class FileFormatSerializer(serializers.Serializer):
         pass
 
 
-class FileFormatsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
+class FileFormatsViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, ParViewSet):
     lookup_field = 'pronom_id'
     lookup_value_regex = '[a-z]+\/[0-9]+'
     serializer_class = serializers.Serializer
@@ -168,7 +173,11 @@ class ToolSerializer(serializers.Serializer):
             }
 
 
-class ToolsViewSet(ParMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
+class ArchivematicaAuthentication(BaseAuthentication):
+    def authenticate(self, request):
+        return None
+
+class ToolsViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, ParViewSet):
     lookup_field = 'slug'
     lookup_value_regex = '.*' #FIXME
     serializer_class = ToolSerializer
@@ -231,7 +240,7 @@ class PreservationActionTypeSerializer(serializers.Serializer):
             }
 
 
-class PreservationActionTypesViewSet(ParMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+class PreservationActionTypesViewSet(mixins.ListModelMixin, ParViewSet):
     serializer_class = PreservationActionTypeSerializer
     queryset = FPRule.objects
     pagination_class = LimitOffsetPagination
@@ -286,7 +295,7 @@ class PreservationActionSerializer(serializers.Serializer):
             }
 
 
-class PreservationActionsViewSet(ParMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+class PreservationActionsViewSet(mixins.ListModelMixin, ParViewSet):
     serializer_class = PreservationActionSerializer
     queryset = FPRule.objects
     pagination_class = LimitOffsetPagination
