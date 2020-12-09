@@ -885,18 +885,23 @@ def format_datetime(value):
         pass
 
 
-def format_task(task, detailed_output=False):
+def format_task(task, include_outputs=False):
     """Format task attributes for endpoint response"""
-    result = {"uuid": task.taskuuid, "exit_code": task.exitcode}
-    if detailed_output:
+    result = {
+        "uuid": task.taskuuid,
+        "exit_code": task.exitcode,
+        "file_uuid": task.fileuuid,
+        "file_name": task.filename,
+        "time_created": format_datetime(task.createdtime),
+        "time_started": format_datetime(task.starttime),
+        "time_ended": format_datetime(task.endtime),
+        "duration": helpers.task_duration_in_seconds(task),
+    }
+    if include_outputs:
         result.update(
             {
-                "file_uuid": task.fileuuid,
-                "file_name": task.filename,
-                "time_created": format_datetime(task.createdtime),
-                "time_started": format_datetime(task.starttime),
-                "time_ended": format_datetime(task.endtime),
-                "duration": helpers.task_duration_in_seconds(task),
+                "stdout": task.stdout,
+                "stderr": task.stderror,
             }
         )
     return result
@@ -949,4 +954,4 @@ def task(request, task_uuid):
         task = models.Task.objects.get(taskuuid=task_uuid)
     except models.Task.DoesNotExist:
         return _error_response("Task with UUID {} does not exist".format(task_uuid))
-    return helpers.json_response(format_task(task, detailed_output=True))
+    return helpers.json_response(format_task(task, request.GET.get("include_outputs")))
