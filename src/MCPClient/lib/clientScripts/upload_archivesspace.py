@@ -3,6 +3,8 @@
 import argparse
 import logging
 import os
+import re
+from shutil import copyfile
 
 from main.models import ArchivesSpaceDIPObjectResourcePairing, File
 from fpr.models import FormatVersion
@@ -66,189 +68,6 @@ def get_pairs(dip_uuid):
 def delete_pairs(dip_uuid):
     ArchivesSpaceDIPObjectResourcePairing.objects.filter(dipuuid=dip_uuid).delete()
 
-
-def upload_to_archivesspace(
-    files,
-    client,
-    xlink_show,
-    xlink_actuate,
-    object_type,
-    use_statement,
-    uri,
-    dip_uuid,
-    access_conditions,
-    use_conditions,
-    restrictions,
-    dip_location,
-    inherit_notes,
-):
-
-    if not uri.endswith("/"):
-        uri += "/"
-    pairs = get_pairs(dip_uuid)
-
-    # get mets object if needed
-    mets = None
-    if (
-        restrictions == "premis"
-        or len(access_conditions) == 0
-        or len(use_conditions) == 0
-    ):
-        logger.debug("Looking for mets: {}".format(dip_uuid))
-        mets_source = os.path.join(dip_location, "METS.{}.xml".format(dip_uuid))
-        mets = mets_file(mets_source)
-        logger.debug("Found mets file at path: {}".format(mets_source))
-
-    all_files_paired_successfully = True
-    for f in files:
-        file_name = os.path.basename(f)
-        uuid = file_name[0:36]
-
-        if uuid not in pairs:
-            logger.error("Skipping file {} ({}) - no pairing found".format(f, uuid))
-            all_files_paired_successfully = False
-            continue
-
-        as_resource = pairs[uuid]
-
-        access_restrictions = None
-        access_rightsGrantedNote = None
-        use_restrictions = None
-        use_rightsGrantedNote = None
-
-        if mets and mets[uuid]:
-            # get premis info from mets
-            for premis in mets[uuid]["premis"]:
-                logger.debug(
-                    "{} rights = {}, note={}".format(
-                        premis,
-                        mets[uuid]["premis"][premis]["restriction"],
-                        mets[uuid]["premis"][premis]["rightsGrantedNote"],
-                    )
-                )
-                if premis == "disseminate":
-                    access_restrictions = mets[uuid]["premis"]["disseminate"][
-                        "restriction"
-                    ]
-                    access_rightsGrantedNote = mets[uuid]["premis"]["disseminate"][
-                        "rightsGrantedNote"
-                    ]
-                if premis == "publish":
-                    use_restrictions = mets[uuid]["premis"]["publish"]["restriction"]
-                    use_rightsGrantedNote = mets[uuid]["premis"]["publish"][
-                        "rightsGrantedNote"
-                    ]
-
-        # determine restrictions
-        restrictions_apply = False
-        if restrictions == "yes":
-            restrictions_apply = True
-            xlink_actuate = "none"
-            xlink_show = "none"
-        elif restrictions == "premis":
-            logger.debug("premis restrictions")
-            if access_restrictions == "Allow" and use_restrictions == "Allow":
-                restrictions_apply = False
-            else:
-                restrictions_apply = True
-                xlink_actuate = "none"
-                xlink_show = "none"
-
-        if len(use_conditions) == 0 or restrictions == "premis":
-            if use_rightsGrantedNote:
-                use_conditions = use_rightsGrantedNote
-
-        if len(access_conditions) == 0 or restrictions == "premis":
-            if access_rightsGrantedNote:
-                access_conditions = access_rightsGrantedNote
-
-        # Get file & format info
-        # Client wants access copy info
-
-        original_name = ""
-        # Get file & format info
-        try:
-            fv = FormatVersion.objects.get(fileformatversion__file_uuid=uuid)
-            format_version = fv.description
-            format_name = fv.format.description
-        except FormatVersion.DoesNotExist:
-            format_name = format_version = None
-
-        # Client wants access copy info
-        try:
-            original_file = File.objects.get(filegrpuse="original", uuid=uuid)
-        except (File.DoesNotExist, File.MultipleObjectsReturned):
-            original_name = ""
-            size = format_name = format_version = None
-        else:
-            # Set some variables based on the original, we will override most
-            # of these if there is an access derivative
-            size = os.path.getsize(f)
-            original_name = os.path.basename(original_file.originallocation)
-        try:
-            access_file = File.objects.get(
-                filegrpuse="access", original_file_set__source_file=uuid
-            )
-        except (File.DoesNotExist, File.MultipleObjectsReturned):
-            # Just use original file info
-            pass
-        else:
-            # HACK remove DIP from the path because create DIP doesn't
-            access_file_path = access_file.currentlocation.replace(
-                "%SIPDirectory%DIP/", dip_location
-            )
-            size = os.path.getsize(access_file_path)
-
-        # HACK map the format version to ArchivesSpace's fixed list of formats it accepts.
-        as_formats = {
-            "Audio Interchange File Format": "aiff",
-            "Audio/Video Interleaved": "avi",
-            "Graphics Interchange Format": "gif",
-            "JPEG": "jpeg",
-            "MPEG Audio": "mp3",
-            "PDF": "pdf",
-            "Tagged Image File Format": "tiff",
-            "Plain Text": "txt",
-        }
-        if format_name is not None:
-            format_name = as_formats.get(format_name)
-
-        logger.info(
-            "Uploading {} to ArchivesSpace record {}".format(file_name, as_resource)
-        )
-        try:
-            client.add_digital_object(
-                parent_archival_object=as_resource,
-                identifier=uuid,
-                # TODO: fetch a title from DC?
-                #       Use the title of the parent record?
-                title=original_name,
-                uri=uri + file_name,
-                location_of_originals=dip_uuid,
-                object_type=object_type,
-                use_statement=use_statement,
-                xlink_show=xlink_show,
-                xlink_actuate=xlink_actuate,
-                restricted=restrictions_apply,
-                use_conditions=use_conditions,
-                access_conditions=access_conditions,
-                size=size,
-                format_name=format_name,
-                format_version=format_version,
-                inherit_notes=inherit_notes,
-            )
-        except ArchivesSpaceError as error:
-
-            logger.error(
-                "Could not upload {} to ArchivesSpace record {}. Error: {}".format(
-                    file_name, as_resource, str(error)
-                )
-            )
-            all_files_paired_successfully = False
-
-        delete_pairs(dip_uuid)
-
-    return all_files_paired_successfully
 
 
 def get_parser(RESTRICTIONS_CHOICES, EAD_ACTUATE_CHOICES, EAD_SHOW_CHOICES):
@@ -314,10 +133,6 @@ def call(jobs):
 
                 args.inherit_notes = args.inherit_notes.lower() in INHERIT_NOTES_CHOICES
 
-                client = ArchivesSpaceClient(
-                    host=args.base_url, user=args.user, passwd=args.passwd
-                )
-
                 try:
                     files = get_files_from_dip(args.dip_location)
                 except ValueError:
@@ -326,21 +141,18 @@ def call(jobs):
                 except Exception:
                     job.set_status(3)
                     continue
-                if upload_to_archivesspace(
-                    files,
-                    client,
-                    args.xlink_show,
-                    args.xlink_actuate,
-                    args.object_type,
-                    args.use_statement,
-                    args.uri_prefix,
-                    args.dip_uuid,
-                    args.access_conditions,
-                    args.use_conditions,
-                    args.restrictions,
-                    args.dip_location,
-                    args.inherit_notes,
-                ):
-                    job.set_status(0)
-                else:
-                    job.set_status(2)
+
+                for file_path in files:
+                    file_name = re.sub('^.*/objects/', '', file_path)
+                    target_path = os.path.join('/var/archivematica/sharedDirectory/www/DIPsStore/', 'QSADIPs', args.dip_uuid, file_name)
+
+                    print "Copying DIP file %s to %s" % (file_path, target_path)
+
+                    try:
+                        os.makedirs(os.path.dirname(target_path))
+                    except:
+                        pass
+
+                    copyfile(file_path, target_path)
+
+                job.set_status(0)
